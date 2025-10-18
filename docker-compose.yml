@@ -4,7 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     ports: 
-      - "3010:3010"
+      - "8080:8080"
     volumes:
       - .:/frontend
       - /frontend/node_modules
+    

@@ -13,7 +13,7 @@ export const Header: React.FC = () => {
           {/* Title */}
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-              経営学部 空き教室検索
+              YNU-TWIN
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
               横浜国立大学

@@ -141,7 +141,7 @@ export default function Index() {
             現在の空き教室
           </h2>
           <p className="text-sm sm:text-base text-gray-600">
-            {availableCount} 件の教室���利用可能です
+            {availableCount} 件の教室が利用可能です
           </p>
         </div>
 

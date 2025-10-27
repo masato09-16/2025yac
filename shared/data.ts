@@ -22,6 +22,14 @@ export interface Building {
   floors: number[];
 }
 
+// 授業情報
+export interface ActiveClass {
+  class_name: string;
+  instructor?: string;
+  start_time: string;
+  end_time: string;
+}
+
 // 教室情報
 export interface Classroom {
   id: string;
@@ -29,12 +37,16 @@ export interface Classroom {
   buildingId: string;
   faculty: Faculty;
   floor: number;
-  status: 'available' | 'in-use';
+  status: 'available' | 'in-use' | 'occupied' | 'full';
   className?: string;
   capacity: number;
+  currentOccupancy?: number;
   hasProjector: boolean;
   hasWifi: boolean;
   hasPowerOutlets: boolean;
+  lastUpdated?: string;
+  statusDetail?: string;
+  activeClass?: ActiveClass;
 }
 
 // 建物マスターデータ

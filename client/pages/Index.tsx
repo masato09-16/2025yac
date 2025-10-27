@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Header from '@/components/Header';
 import SearchFilters, { SearchFiltersValue } from '@/components/SearchFilters';
 import ClassroomCard from '@/components/ClassroomCard';
-import { ALL_CLASSROOMS } from '@shared/classrooms';
-import { FACULTY_NAMES } from '@shared/data';
-import { Grid3x3, GraduationCap } from 'lucide-react';
+import { FACULTY_NAMES, type Classroom as SharedClassroom, type Faculty } from '@shared/data';
+import { GraduationCap } from 'lucide-react';
+import { getClassroomsWithStatus } from '@/lib/api';
 
 export default function Index() {
   const [currentFilters, setCurrentFilters] = useState<SearchFiltersValue>({
@@ -13,29 +13,89 @@ export default function Index() {
     period: '1',
     day: 'mon',
   });
+  const [classrooms, setClassrooms] = useState<SharedClassroom[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch classrooms from API
+  useEffect(() => {
+    const fetchClassrooms = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const params: any = {};
+        if (currentFilters.faculty !== 'all') {
+          params.faculty = currentFilters.faculty;
+        }
+        if (currentFilters.building !== 'all') {
+          params.building_id = currentFilters.building;
+        }
+        
+        const data = await getClassroomsWithStatus(params);
+        
+        // Convert API data to frontend format
+        const convertedClassrooms: SharedClassroom[] = data.map((item) => {
+          const classroom = item.classroom;
+          const occupancy = item.occupancy;
+          
+          // Map backend status to frontend status
+          let status: 'available' | 'in-use' | 'occupied' | 'full' = 'available';
+          const backendStatus = item.status;
+          
+          if (backendStatus === 'in-class' || backendStatus === 'scheduled-low') {
+            status = 'in-use';
+          } else if (backendStatus === 'occupied') {
+            status = 'full';
+          } else if (backendStatus === 'partially-occupied') {
+            status = 'occupied';
+          } else {
+            status = 'available';
+          }
+          
+          const currentOccupancy = occupancy?.current_count || 0;
+          
+          return {
+            id: classroom.id,
+            roomNumber: classroom.room_number,
+            buildingId: classroom.building_id,
+            faculty: classroom.faculty as Faculty,
+            floor: classroom.floor,
+            capacity: classroom.capacity,
+            currentOccupancy,
+            status,
+            className: item.active_class?.class_name,
+            hasProjector: classroom.has_projector,
+            hasWifi: classroom.has_wifi,
+            hasPowerOutlets: classroom.has_power_outlets,
+            lastUpdated: occupancy?.last_updated || new Date().toISOString(),
+            statusDetail: item.status_detail,
+            activeClass: item.active_class,
+          };
+        });
+        
+        setClassrooms(convertedClassrooms);
+      } catch (err) {
+        console.error('Failed to fetch classrooms:', err);
+        setError('教室データの取得に失敗しました');
+        setClassrooms([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClassrooms();
+  }, [currentFilters.faculty, currentFilters.building]);
 
   const handleSearch = (filters: SearchFiltersValue) => {
     setCurrentFilters(filters);
-    // In a real app, you would fetch data based on filters here
   };
 
-  // Filter classrooms based on current filters
+  // Filter and sort classrooms
   const displayedClassrooms = useMemo(() => {
-    let filtered = ALL_CLASSROOMS;
-
-    // Filter by faculty
-    if (currentFilters.faculty !== 'all') {
-      filtered = filtered.filter(c => c.faculty === currentFilters.faculty);
-    }
-
-    // Filter by building
-    if (currentFilters.building !== 'all') {
-      filtered = filtered.filter(c => c.buildingId === currentFilters.building);
-    }
-
     // Sort by room number for better organization
-    return filtered.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
-  }, [currentFilters]);
+    return classrooms.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
+  }, [classrooms]);
 
   const availableCount = displayedClassrooms.filter(c => c.status === 'available').length;
   
@@ -62,28 +122,54 @@ export default function Index() {
 
       {/* Results Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-ynu-blue border-r-transparent"></div>
+            <p className="mt-4 text-gray-600">データを読み込んでいます...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-600 font-medium">{error}</p>
+            <p className="text-sm text-red-500 mt-2">バックエンドサーバーが起動していることを確認してください</p>
+          </div>
+        )}
+
         {/* Results Header with stats */}
-        <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
+        {!loading && !error && (
+          <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-ynu-blue to-ynu-blue-dark bg-clip-text text-transparent mb-2">
-              現在の空き教室
+              教室一覧
             </h2>
             <p className="text-base sm:text-lg text-gray-600 font-medium">
-              {availableCount} 件の教室が利用可能です
+              全 {displayedClassrooms.length} 件中 {availableCount} 件が利用可能です
             </p>
           </div>
           
-          {/* Stats badge */}
-          <div className="flex items-center gap-2 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-md border border-gray-200">
-            <div className="w-3 h-3 bg-status-available rounded-full animate-pulse-subtle"></div>
-            <span className="text-sm font-semibold text-gray-700">
-              {availableCount} 件利用可能
-            </span>
+          {/* Stats badges */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 bg-green-50 backdrop-blur-sm px-4 py-2 rounded-full shadow-md border border-green-200">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse-subtle"></div>
+              <span className="text-sm font-semibold text-green-700">
+                空き: {availableCount}件
+              </span>
+            </div>
+            <div className="flex items-center gap-2 bg-red-50 backdrop-blur-sm px-4 py-2 rounded-full shadow-md border border-red-200">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className="text-sm font-semibold text-red-700">
+                使用中: {displayedClassrooms.length - availableCount}件
+              </span>
+            </div>
           </div>
         </div>
+        )}
 
         {/* Display classrooms grouped by faculty */}
-        {Object.keys(classroomsByFaculty).length > 0 ? (
+        {!loading && !error && Object.keys(classroomsByFaculty).length > 0 ? (
           <div className="space-y-12">
             {Object.entries(classroomsByFaculty).map(([faculty, classrooms]) => {
               const facultyName = FACULTY_NAMES[faculty as keyof typeof FACULTY_NAMES];
@@ -102,8 +188,8 @@ export default function Index() {
                     </div>
                   </div>
                   
-                  {/* Classroom Cards Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Classroom Cards Grid - 4 columns on desktop */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                     {classrooms.map((classroom, index) => (
                       <div 
                         key={classroom.id} 
@@ -118,7 +204,7 @@ export default function Index() {
               );
             })}
           </div>
-        ) : (
+        ) : !loading && !error ? (
           <div className="bg-white rounded-2xl shadow-xl p-12 sm:p-16 text-center border-2 border-dashed border-gray-300">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
@@ -134,7 +220,7 @@ export default function Index() {
               </p>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Building2, Clock } from 'lucide-react';
 
 export const Header: React.FC = () => {
@@ -18,10 +19,12 @@ export const Header: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 sm:gap-6">
             {/* YNU Logo with animated shine effect */}
-            <div className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-xl shadow-lg overflow-hidden group">
-              <span className="text-ynu-blue font-bold text-lg sm:text-xl relative z-10">YNU</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            </div>
+            <Link to="/">
+              <div className="relative flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-white rounded-xl shadow-lg overflow-hidden group cursor-pointer">
+                <span className="text-ynu-blue font-bold text-lg sm:text-xl relative z-10">YNU</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              </div>
+            </Link>
             
             {/* Title with enhanced styling */}
             <div>
@@ -36,7 +39,7 @@ export const Header: React.FC = () => {
           </div>
 
           {/* Time indicator with real-time updates */}
-          <div className="hidden sm:flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full">
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 sm:px-4 py-2 rounded-full">
             <Clock className="w-4 h-4 text-white" />
             <span className="text-sm font-medium text-white">
               {currentTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}

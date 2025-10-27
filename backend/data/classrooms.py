@@ -1,0 +1,535 @@
+"""
+Classroom data for database seeding
+Based on actual YNU classroom maps
+"""
+
+# All classrooms data - 完全版
+ALL_CLASSROOMS = [
+    # ============= 教育学部講義棟6号館 =============
+    {
+        'id': 'edu6-101', 'roomNumber': '6-101', 'buildingId': 'edu-6',
+        'faculty': 'education', 'floor': 1, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu6-102', 'roomNumber': '6-102', 'buildingId': 'edu-6',
+        'faculty': 'education', 'floor': 1, 'capacity': 80,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu6-201', 'roomNumber': '6-201', 'buildingId': 'edu-6',
+        'faculty': 'education', 'floor': 2, 'capacity': 70,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    
+    # ============= 教育学部講義棟7号館・化学実験室 =============
+    # 1階
+    {
+        'id': 'edu7-101', 'roomNumber': '7-101', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 1, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-102a', 'roomNumber': '7-102A', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 1, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-103', 'roomNumber': '7-103', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-104', 'roomNumber': '7-104', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 1, 'capacity': 35,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 2階
+    {
+        'id': 'edu7-201', 'roomNumber': '7-201', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 2, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-202', 'roomNumber': '7-202', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 2, 'capacity': 65,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-203', 'roomNumber': '7-203', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 2, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-210', 'roomNumber': '7-210', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-211', 'roomNumber': '7-211', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 3階
+    {
+        'id': 'edu7-301', 'roomNumber': '7-301', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 45,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-302', 'roomNumber': '7-302', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 45,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-303', 'roomNumber': '7-303', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-304', 'roomNumber': '7-304', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 35,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-305', 'roomNumber': '7-305', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 35,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-306', 'roomNumber': '7-306', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 35,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-307', 'roomNumber': '7-307', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-308', 'roomNumber': '7-308', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-309', 'roomNumber': '7-309', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-310', 'roomNumber': '7-310', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu7-311', 'roomNumber': '7-311', 'buildingId': 'edu-7',
+        'faculty': 'education', 'floor': 3, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    
+    # ============= 教育学部講義棟8号館／都市科学部講義棟 =============
+    # 1階
+    {
+        'id': 'edu8-101', 'roomNumber': '8-101', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 1, 'capacity': 80,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-102', 'roomNumber': '8-102', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 1, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-103', 'roomNumber': '8-103', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 1, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-104', 'roomNumber': '8-104', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-105', 'roomNumber': '8-105', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-106', 'roomNumber': '8-106', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-107', 'roomNumber': '8-107', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 2階
+    {
+        'id': 'edu8-201', 'roomNumber': '8-201', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 2, 'capacity': 80,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-202', 'roomNumber': '8-202', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 2, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-203', 'roomNumber': '8-203', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 2, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-204', 'roomNumber': '8-204', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-205', 'roomNumber': '8-205', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-206', 'roomNumber': '8-206', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'edu8-207', 'roomNumber': '8-207', 'buildingId': 'edu-8',
+        'faculty': 'education', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    
+    # ============= 都市科学部講義棟 (urban-8と同じ建物) =============
+    {
+        'id': 'urban-101', 'roomNumber': '都市-101', 'buildingId': 'urban-8',
+        'faculty': 'urban-sciences', 'floor': 1, 'capacity': 70,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'urban-103', 'roomNumber': '都市-103', 'buildingId': 'urban-8',
+        'faculty': 'urban-sciences', 'floor': 1, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    
+    # ============= 理工学部講義棟A・物理実験室 =============
+    # 1階
+    {
+        'id': 'eng-a-101', 'roomNumber': 'A-101', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 100,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-102', 'roomNumber': 'A-102', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-104', 'roomNumber': 'A-104', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-105', 'roomNumber': 'A-105', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-106', 'roomNumber': 'A-106', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-107', 'roomNumber': 'A-107', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-108', 'roomNumber': 'A-108', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 35,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-109', 'roomNumber': 'A-109', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-110', 'roomNumber': 'A-110', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 2階
+    {
+        'id': 'eng-a-201', 'roomNumber': 'A-201', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 2, 'capacity': 80,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-202', 'roomNumber': 'A-202', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 2, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-203', 'roomNumber': 'A-203', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 2, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-204', 'roomNumber': 'A-204', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-206', 'roomNumber': 'A-206', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-207', 'roomNumber': 'A-207', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 2, 'capacity': 35,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-208', 'roomNumber': 'A-208', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 2, 'capacity': 35,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 3階
+    {
+        'id': 'eng-a-301', 'roomNumber': 'A-301', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 3, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-302', 'roomNumber': 'A-302', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 3, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-303', 'roomNumber': 'A-303', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 3, 'capacity': 45,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-304', 'roomNumber': 'A-304', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 3, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-305', 'roomNumber': 'A-305', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 3, 'capacity': 35,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-306', 'roomNumber': 'A-306', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 3, 'capacity': 35,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-a-307', 'roomNumber': 'A-307', 'buildingId': 'eng-a',
+        'faculty': 'engineering', 'floor': 3, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    
+    # ============= 理工学部講義棟B =============
+    # 1階
+    {
+        'id': 'eng-b-graphic', 'roomNumber': 'B-グラフィック演習室', 'buildingId': 'eng-b',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 2階
+    {
+        'id': 'eng-b-201', 'roomNumber': 'B-201', 'buildingId': 'eng-b',
+        'faculty': 'engineering', 'floor': 2, 'capacity': 80,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-b-202', 'roomNumber': 'B-202', 'buildingId': 'eng-b',
+        'faculty': 'engineering', 'floor': 2, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    
+    # ============= 理工学部講義棟C =============
+    # 1階
+    {
+        'id': 'eng-c-101', 'roomNumber': 'C-101', 'buildingId': 'eng-c',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 100,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'eng-c-102', 'roomNumber': 'C-102', 'buildingId': 'eng-c',
+        'faculty': 'engineering', 'floor': 1, 'capacity': 80,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 2階
+    {
+        'id': 'eng-c-201', 'roomNumber': 'C-201', 'buildingId': 'eng-c',
+        'faculty': 'engineering', 'floor': 2, 'capacity': 100,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    
+    # ============= 経済学部講義棟2号館 =============
+    # 1階
+    {
+        'id': 'econ2-111', 'roomNumber': '経済111', 'buildingId': 'econ-2',
+        'faculty': 'economics', 'floor': 1, 'capacity': 120,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 2階
+    {
+        'id': 'econ2-211', 'roomNumber': '経済211', 'buildingId': 'econ-2',
+        'faculty': 'economics', 'floor': 2, 'capacity': 100,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ2-212', 'roomNumber': '経済212', 'buildingId': 'econ-2',
+        'faculty': 'economics', 'floor': 2, 'capacity': 80,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    
+    # ============= 経済学部講義棟1号館 =============
+    # 1階
+    {
+        'id': 'econ1-101', 'roomNumber': '経済101', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 1, 'capacity': 100,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-102', 'roomNumber': '経済102', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 1, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-103', 'roomNumber': '経済103', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 1, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-104', 'roomNumber': '経済104', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-105', 'roomNumber': '経済105', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-106', 'roomNumber': '経済106', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 1, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-107', 'roomNumber': '経済107', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 1, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-108', 'roomNumber': '経済108', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 1, 'capacity': 45,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-109', 'roomNumber': '経済109', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 1, 'capacity': 80,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 2階
+    {
+        'id': 'econ1-201', 'roomNumber': '経済201', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 2, 'capacity': 100,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-202', 'roomNumber': '経済202', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 2, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-203', 'roomNumber': '経済203', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 2, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-204', 'roomNumber': '経済204', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-205', 'roomNumber': '経済205', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-206', 'roomNumber': '経済206', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 2, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-207', 'roomNumber': '経済207', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 2, 'capacity': 60,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-208', 'roomNumber': '経済208', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 2, 'capacity': 80,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 3階
+    {
+        'id': 'econ1-331', 'roomNumber': '経済331', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 3, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-332', 'roomNumber': '経済332', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 3, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-333', 'roomNumber': '経済333', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 3, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'econ1-334', 'roomNumber': '経済334', 'buildingId': 'econ-1',
+        'faculty': 'economics', 'floor': 3, 'capacity': 30,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    
+    # ============= 経営学部講義棟1号館 =============
+    # 1階
+    {
+        'id': 'bus1-101', 'roomNumber': '経営101', 'buildingId': 'bus-1',
+        'faculty': 'business', 'floor': 1, 'capacity': 100,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'bus1-103', 'roomNumber': '経営103', 'buildingId': 'bus-1',
+        'faculty': 'business', 'floor': 1, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    {
+        'id': 'bus1-105', 'roomNumber': '経営105', 'buildingId': 'bus-1',
+        'faculty': 'business', 'floor': 1, 'capacity': 40,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    # 2階
+    {
+        'id': 'bus1-203', 'roomNumber': '経営203', 'buildingId': 'bus-1',
+        'faculty': 'business', 'floor': 2, 'capacity': 50,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+    
+    # ============= 経営学部講義棟2号館 =============
+    # 2階
+    {
+        'id': 'bus2-201', 'roomNumber': '経営201', 'buildingId': 'bus-2',
+        'faculty': 'business', 'floor': 2, 'capacity': 100,
+        'hasProjector': True, 'hasWifi': True, 'hasPowerOutlets': True
+    },
+]
+

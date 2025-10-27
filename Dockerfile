@@ -1,11 +1,11 @@
 # ベースイメージとして、Node.jsを使用
-FROM node:lts-alpine3.22
+FROM node:lts-alpine
 
 # 作業ディレクトリを設定
-WORKDIR /frontend
+WORKDIR /app
 
 # パッケージファイルをコピー
-COPY package.json package-lock.json ./
+COPY package*.json ./
 
 # 依存関係をインストール
 RUN npm install
@@ -13,4 +13,8 @@ RUN npm install
 # ソースコードをコピー
 COPY . .
 
-CMD ["npm", "run", "dev"]
+# ポートを公開
+EXPOSE 8080
+
+# 開発サーバーを起動
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

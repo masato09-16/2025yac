@@ -1,117 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Header from '@/components/Header';
 import SearchFilters, { SearchFiltersValue } from '@/components/SearchFilters';
-import ClassroomCard, { ClassroomInfo } from '@/components/ClassroomCard';
-
-// Sample classroom data
-const SAMPLE_CLASSROOMS: ClassroomInfo[] = [
-  {
-    id: '1',
-    roomNumber: '経営104',
-    status: 'available',
-    capacity: 120,
-    hasProjector: true,
-    hasWifi: true,
-    hasPowerOutlets: true,
-  },
-  {
-    id: '2',
-    roomNumber: '経営105',
-    status: 'in-use',
-    className: '経営学原論',
-    capacity: 100,
-    hasProjector: true,
-    hasWifi: true,
-    hasPowerOutlets: false,
-  },
-  {
-    id: '3',
-    roomNumber: '経営106',
-    status: 'available',
-    capacity: 80,
-    hasProjector: true,
-    hasWifi: true,
-    hasPowerOutlets: true,
-  },
-  {
-    id: '4',
-    roomNumber: '経営107',
-    status: 'available',
-    capacity: 150,
-    hasProjector: false,
-    hasWifi: true,
-    hasPowerOutlets: true,
-  },
-  {
-    id: '5',
-    roomNumber: '経営108',
-    status: 'in-use',
-    className: '管理会計論',
-    capacity: 90,
-    hasProjector: true,
-    hasWifi: true,
-    hasPowerOutlets: true,
-  },
-  {
-    id: '6',
-    roomNumber: '経営109',
-    status: 'available',
-    capacity: 110,
-    hasProjector: true,
-    hasWifi: false,
-    hasPowerOutlets: true,
-  },
-  {
-    id: '7',
-    roomNumber: '経営204',
-    status: 'available',
-    capacity: 130,
-    hasProjector: true,
-    hasWifi: true,
-    hasPowerOutlets: true,
-  },
-  {
-    id: '8',
-    roomNumber: '経営205',
-    status: 'available',
-    capacity: 100,
-    hasProjector: true,
-    hasWifi: true,
-    hasPowerOutlets: true,
-  },
-  {
-    id: '9',
-    roomNumber: '経営206',
-    status: 'in-use',
-    className: '財務管理論',
-    capacity: 85,
-    hasProjector: true,
-    hasWifi: true,
-    hasPowerOutlets: false,
-  },
-  {
-    id: '10',
-    roomNumber: '経営207',
-    status: 'available',
-    capacity: 120,
-    hasProjector: true,
-    hasWifi: true,
-    hasPowerOutlets: true,
-  },
-  {
-    id: '11',
-    roomNumber: '経営208',
-    status: 'available',
-    capacity: 95,
-    hasProjector: false,
-    hasWifi: true,
-    hasPowerOutlets: true,
-  },
-];
+import ClassroomCard from '@/components/ClassroomCard';
+import { ALL_CLASSROOMS } from '@shared/classrooms';
+import { FACULTY_NAMES } from '@shared/data';
+import { Grid3x3, GraduationCap } from 'lucide-react';
 
 export default function Index() {
   const [currentFilters, setCurrentFilters] = useState<SearchFiltersValue>({
-    building: 'building1',
+    faculty: 'all',
+    building: 'all',
     period: '1',
     day: 'mon',
   });
@@ -121,9 +19,38 @@ export default function Index() {
     // In a real app, you would fetch data based on filters here
   };
 
-  // In a real app, this would be based on the currentFilters
-  const displayedClassrooms = SAMPLE_CLASSROOMS;
+  // Filter classrooms based on current filters
+  const displayedClassrooms = useMemo(() => {
+    let filtered = ALL_CLASSROOMS;
+
+    // Filter by faculty
+    if (currentFilters.faculty !== 'all') {
+      filtered = filtered.filter(c => c.faculty === currentFilters.faculty);
+    }
+
+    // Filter by building
+    if (currentFilters.building !== 'all') {
+      filtered = filtered.filter(c => c.buildingId === currentFilters.building);
+    }
+
+    // Sort by room number for better organization
+    return filtered.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
+  }, [currentFilters]);
+
   const availableCount = displayedClassrooms.filter(c => c.status === 'available').length;
+  
+  // Group classrooms by faculty for display
+  const classroomsByFaculty = useMemo(() => {
+    const groups: Record<string, typeof displayedClassrooms> = {};
+    displayedClassrooms.forEach(classroom => {
+      const faculty = classroom.faculty;
+      if (!groups[faculty]) {
+        groups[faculty] = [];
+      }
+      groups[faculty].push(classroom);
+    });
+    return groups;
+  }, [displayedClassrooms]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
@@ -155,18 +82,41 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Classroom Cards Grid */}
-        {displayedClassrooms.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {displayedClassrooms.map((classroom, index) => (
-              <div 
-                key={classroom.id} 
-                style={{ animationDelay: `${index * 50}ms` }}
-                className="animate-fadeInUp"
-              >
-                <ClassroomCard classroom={classroom} />
-              </div>
-            ))}
+        {/* Display classrooms grouped by faculty */}
+        {Object.keys(classroomsByFaculty).length > 0 ? (
+          <div className="space-y-12">
+            {Object.entries(classroomsByFaculty).map(([faculty, classrooms]) => {
+              const facultyName = FACULTY_NAMES[faculty as keyof typeof FACULTY_NAMES];
+              const facultyAvailable = classrooms.filter(c => c.status === 'available').length;
+              
+              return (
+                <div key={faculty} className="animate-fadeInUp">
+                  {/* Faculty Header */}
+                  <div className="mb-6 flex items-center gap-3">
+                    <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-ynu-blue to-ynu-blue-dark rounded-xl shadow-lg">
+                      <GraduationCap className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-gray-900">{facultyName?.full || faculty}</h3>
+                      <p className="text-sm text-gray-600">{facultyAvailable} 件の教室が利用可能</p>
+                    </div>
+                  </div>
+                  
+                  {/* Classroom Cards Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {classrooms.map((classroom, index) => (
+                      <div 
+                        key={classroom.id} 
+                        style={{ animationDelay: `${index * 50}ms` }}
+                        className="animate-fadeInUp"
+                      >
+                        <ClassroomCard classroom={classroom} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="bg-white rounded-2xl shadow-xl p-12 sm:p-16 text-center border-2 border-dashed border-gray-300">

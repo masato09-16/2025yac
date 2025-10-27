@@ -1,0 +1,23 @@
+{
+  "name": "YNU-TWIN - 横浜国立大学 空き教室検索",
+  "short_name": "YNU-TWIN",
+  "description": "横浜国立大学 空き教室検索システム",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#004990",
+  "theme_color": "#004990",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml"
+    }
+  ]
+}
+

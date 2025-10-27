@@ -1,21 +1,14 @@
 import React from 'react';
 import { Users, Wifi, Plug, Projector } from 'lucide-react';
+import type { Classroom } from '@shared/data';
 
 export type ClassroomStatus = 'available' | 'in-use';
 
-export interface ClassroomInfo {
-  id: string;
-  roomNumber: string;
-  status: ClassroomStatus;
-  className?: string;
-  capacity: number;
-  hasProjector: boolean;
-  hasWifi: boolean;
-  hasPowerOutlets: boolean;
-}
+// 後方互換性のためのエクスポート
+export interface ClassroomInfo extends Classroom {}
 
 interface ClassroomCardProps {
-  classroom: ClassroomInfo;
+  classroom: Classroom | ClassroomInfo;
 }
 
 export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom }) => {

@@ -6,12 +6,22 @@ import { FACULTY_NAMES, type Classroom as SharedClassroom, type Faculty } from '
 import { GraduationCap } from 'lucide-react';
 import { getClassroomsWithStatus } from '@/lib/api';
 
+const PERIODS = [
+  { id: '1', name: '1限', time: '8:50-10:20' },
+  { id: '2', name: '2限', time: '10:30-12:00' },
+  { id: '3', name: '3限', time: '13:00-14:30' },
+  { id: '4', name: '4限', time: '14:40-16:10' },
+  { id: '5', name: '5限', time: '16:15-17:45' },
+];
+
 export default function Index() {
   const [currentFilters, setCurrentFilters] = useState<SearchFiltersValue>({
     faculty: 'all',
     building: 'all',
     period: '1',
-    day: 'mon',
+    status: 'all',
+    searchMode: 'now',
+    targetDate: undefined,
   });
   const [classrooms, setClassrooms] = useState<SharedClassroom[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +40,12 @@ export default function Index() {
         }
         if (currentFilters.building !== 'all') {
           params.building_id = currentFilters.building;
+        }
+        
+        // Add date and period parameters if in future mode
+        if (currentFilters.searchMode === 'future' && currentFilters.targetDate) {
+          params.target_date = currentFilters.targetDate;
+          params.target_period = parseInt(currentFilters.period);
         }
         
         const data = await getClassroomsWithStatus(params);
@@ -85,7 +101,7 @@ export default function Index() {
     };
 
     fetchClassrooms();
-  }, [currentFilters.faculty, currentFilters.building]);
+  }, [currentFilters.faculty, currentFilters.building, currentFilters.searchMode, currentFilters.targetDate, currentFilters.period]);
 
   const handleSearch = (filters: SearchFiltersValue) => {
     setCurrentFilters(filters);
@@ -93,11 +109,41 @@ export default function Index() {
 
   // Filter and sort classrooms
   const displayedClassrooms = useMemo(() => {
+    let filtered = [...classrooms];
+    
+    // Apply status filter
+    if (currentFilters.status !== 'all') {
+      filtered = filtered.filter(classroom => {
+        // Check if classroom has no data (no schedule and no occupancy)
+        const hasNoData = !classroom.activeClass && !classroom.currentOccupancy;
+        
+        if (currentFilters.status === 'available') {
+          return classroom.status === 'available' && !hasNoData;
+        } else if (currentFilters.status === 'in-use') {
+          return classroom.status === 'in-use' || classroom.status === 'full' || classroom.status === 'occupied';
+        } else if (currentFilters.status === 'no-data') {
+          return hasNoData;
+        }
+        return true;
+      });
+    }
+    
     // Sort by room number for better organization
-    return classrooms.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
-  }, [classrooms]);
+    return filtered.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
+  }, [classrooms, currentFilters.status]);
 
-  const availableCount = displayedClassrooms.filter(c => c.status === 'available').length;
+  const availableCount = displayedClassrooms.filter(c => {
+    const hasNoData = !c.activeClass && !c.currentOccupancy;
+    return c.status === 'available' && !hasNoData;
+  }).length;
+  
+  const inUseCount = displayedClassrooms.filter(c => 
+    c.status === 'in-use' || c.status === 'full' || c.status === 'occupied'
+  ).length;
+  
+  const noDataCount = displayedClassrooms.filter(c => 
+    !c.activeClass && !c.currentOccupancy
+  ).length;
   
   // Group classrooms by faculty for display
   const classroomsByFaculty = useMemo(() => {
@@ -143,9 +189,14 @@ export default function Index() {
           <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-ynu-blue to-ynu-blue-dark bg-clip-text text-transparent mb-2">
-              教室一覧
+              {currentFilters.searchMode === 'now' ? '現在の教室一覧' : '指定日時の教室一覧'}
             </h2>
             <p className="text-base sm:text-lg text-gray-600 font-medium">
+              {currentFilters.searchMode === 'future' && currentFilters.targetDate && (
+                <span className="text-ynu-blue font-semibold mr-2">
+                  📅 {currentFilters.targetDate} {PERIODS.find(p => p.id === currentFilters.period)?.name}
+                </span>
+              )}
               全 {displayedClassrooms.length} 件中 {availableCount} 件が利用可能です
             </p>
           </div>
@@ -161,9 +212,17 @@ export default function Index() {
             <div className="flex items-center gap-2 bg-red-50 backdrop-blur-sm px-4 py-2 rounded-full shadow-md border border-red-200">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
               <span className="text-sm font-semibold text-red-700">
-                使用中: {displayedClassrooms.length - availableCount}件
+                使用中: {inUseCount}件
               </span>
             </div>
+            {noDataCount > 0 && (
+              <div className="flex items-center gap-2 bg-gray-50 backdrop-blur-sm px-4 py-2 rounded-full shadow-md border border-gray-200">
+                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                <span className="text-sm font-semibold text-gray-600">
+                  データなし: {noDataCount}件
+                </span>
+              </div>
+            )}
           </div>
         </div>
         )}
@@ -173,7 +232,10 @@ export default function Index() {
           <div className="space-y-12">
             {Object.entries(classroomsByFaculty).map(([faculty, classrooms]) => {
               const facultyName = FACULTY_NAMES[faculty as keyof typeof FACULTY_NAMES];
-              const facultyAvailable = classrooms.filter(c => c.status === 'available').length;
+              const facultyAvailable = classrooms.filter(c => {
+                const hasNoData = !c.activeClass && !c.currentOccupancy;
+                return c.status === 'available' && !hasNoData;
+              }).length;
               
               return (
                 <div key={faculty} className="animate-fadeInUp">

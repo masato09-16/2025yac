@@ -55,9 +55,15 @@ async def get_classroom_occupancy(classroom_id: str, db: Session = Depends(get_d
 async def get_classrooms_with_status(
     faculty: Optional[str] = Query(None, description="Filter by faculty"),
     building_id: Optional[str] = Query(None, description="Filter by building ID"),
+    target_date: Optional[str] = Query(None, description="Target date (YYYY-MM-DD)"),
+    target_period: Optional[int] = Query(None, description="Target period (1-5)"),
     db: Session = Depends(get_db)
 ):
-    """Get classrooms with their occupancy status and class schedule information"""
+    """Get classrooms with their occupancy status and class schedule information
+    
+    If target_date and target_period are provided, check schedule for that specific time.
+    Otherwise, check current time status.
+    """
     query = db.query(Classroom)
     
     if faculty:
@@ -66,49 +72,85 @@ async def get_classrooms_with_status(
         query = query.filter(Classroom.building_id == building_id)
     
     classrooms = query.all()
-    current_time = datetime.now()
+    
+    # Determine which time to check
+    use_future_time = target_date and target_period
+    
+    if use_future_time:
+        # Parse target date and get day of week
+        try:
+            target_datetime = datetime.strptime(target_date, "%Y-%m-%d")
+            # 0=Monday, 6=Sunday in Python
+            day_of_week_num = target_datetime.weekday()
+            day_names = ["月", "火", "水", "木", "金", "土", "日"]
+            target_day = day_names[day_of_week_num]
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    else:
+        current_time = datetime.now()
     
     result = []
     for classroom in classrooms:
         occupancy = db.query(DBOccupancy).filter(DBOccupancy.classroom_id == classroom.id).first()
         
-        # Check if there's a scheduled class now
+        # Check if there's a scheduled class
         all_schedules = db.query(ClassSchedule).filter(ClassSchedule.classroom_id == classroom.id).all()
         active_schedule = None
-        for schedule in all_schedules:
-            if schedule.is_active_now(current_time):
-                active_schedule = schedule
-                break
+        
+        if use_future_time:
+            # Check for future date schedule
+            for schedule in all_schedules:
+                if schedule.day_of_week == target_day and schedule.period == target_period:
+                    active_schedule = schedule
+                    break
+        else:
+            # Check current time
+            for schedule in all_schedules:
+                if schedule.is_active_now(current_time):
+                    active_schedule = schedule
+                    break
         
         # Determine detailed status
         current_count = occupancy.current_count if occupancy else 0
         occupancy_rate = occupancy.occupancy_rate if occupancy else 0.0
         
-        # Status logic:
-        # 1. If class is scheduled AND people are present -> "in-class" (授業中)
-        # 2. If class is scheduled BUT few people -> "scheduled-low" (授業予定だが人少ない)
-        # 3. If NO class scheduled BUT many people -> "occupied" (空き教室だが混雑)
-        # 4. If NO class scheduled AND few people -> "available" (空き教室)
-        
-        if active_schedule:
-            if occupancy_rate >= 0.1:  # 10% or more occupied
+        # Status logic differs for future vs current time
+        if use_future_time:
+            # For future time, only check schedule (no occupancy data available)
+            if active_schedule:
                 status = "in-class"
-                status_detail = f"授業中: {active_schedule.class_name}"
-            else:
-                status = "scheduled-low"
                 status_detail = f"授業予定: {active_schedule.class_name}"
-        else:
-            if occupancy_rate >= 0.5:  # 50% or more occupied
-                status = "occupied"
-                status_detail = "空き教室（混雑）"
-            elif occupancy_rate >= 0.1:  # 10-50% occupied
-                status = "partially-occupied"
-                status_detail = "空き教室（一部使用中）"
             else:
                 status = "available"
                 status_detail = "空き教室"
-        
-        is_available = (status in ["available", "partially-occupied"])
+            is_available = (status == "available")
+        else:
+            # For current time, use both schedule and occupancy
+            # Status logic:
+            # 1. If class is scheduled AND people are present -> "in-class" (授業中)
+            # 2. If class is scheduled BUT few people -> "scheduled-low" (授業予定だが人少ない)
+            # 3. If NO class scheduled BUT many people -> "occupied" (空き教室だが混雑)
+            # 4. If NO class scheduled AND few people -> "available" (空き教室)
+            
+            if active_schedule:
+                if occupancy_rate >= 0.1:  # 10% or more occupied
+                    status = "in-class"
+                    status_detail = f"授業中: {active_schedule.class_name}"
+                else:
+                    status = "scheduled-low"
+                    status_detail = f"授業予定: {active_schedule.class_name}"
+            else:
+                if occupancy_rate >= 0.5:  # 50% or more occupied
+                    status = "occupied"
+                    status_detail = "空き教室（混雑）"
+                elif occupancy_rate >= 0.1:  # 10-50% occupied
+                    status = "partially-occupied"
+                    status_detail = "空き教室（一部使用中）"
+                else:
+                    status = "available"
+                    status_detail = "空き教室"
+            
+            is_available = (status in ["available", "partially-occupied"])
         
         result.append({
             "classroom": {

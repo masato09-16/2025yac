@@ -131,11 +131,15 @@ export async function getClassroomsWithStatus(params?: {
   faculty?: string;
   building_id?: string;
   available_only?: boolean;
+  target_date?: string; // YYYY-MM-DD format
+  target_period?: number; // 1-5
 }): Promise<ClassroomWithStatus[]> {
   const queryParams = new URLSearchParams();
   if (params?.faculty) queryParams.append('faculty', params.faculty);
   if (params?.building_id) queryParams.append('building_id', params.building_id);
   if (params?.available_only) queryParams.append('available_only', 'true');
+  if (params?.target_date) queryParams.append('target_date', params.target_date);
+  if (params?.target_period) queryParams.append('target_period', params.target_period.toString());
 
   const query = queryParams.toString();
   const endpoint = `/api/v1/occupancy/classrooms-with-status${query ? `?${query}` : ''}`;

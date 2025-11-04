@@ -9,6 +9,7 @@ import logging
 from config import settings
 from api.routes import classrooms, occupancy, schedules
 from camera.processor import CameraProcessor
+from utils.db_init import init_database
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,13 @@ async def lifespan(app: FastAPI):
     
     # Startup
     logger.info("Starting FastAPI application...")
+    
+    # Ensure database schema and seed data exist
+    try:
+        init_database()
+        logger.info("Database initialized/seeding checked")
+    except Exception as e:
+        logger.exception("Database initialization failed: %s", e)
     
     if settings.camera_enabled:
         camera_processor = CameraProcessor()

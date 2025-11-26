@@ -135,4 +135,46 @@
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: 150ms;
   }
+
+  /* モバイル最適化: タッチターゲット */
+  @media (max-width: 640px) {
+    button, a, input[type="button"], input[type="submit"], select {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
+  /* スクロール最適化: スムーズスクロール */
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* タッチデバイス最適化: タップハイライトを無効化 */
+  @media (hover: none) and (pointer: coarse) {
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
+
+  /* フォントレンダリング最適化 */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* モバイル: テキスト選択最適化 */
+  @media (max-width: 640px) {
+    p, span, div {
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    
+    /* 入力フィールドは選択可能 */
+    input, textarea, select {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+  }
 }

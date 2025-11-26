@@ -7,8 +7,16 @@ WORKDIR /app
 # パッケージファイルをコピー
 COPY package*.json ./
 
-# 依存関係をインストール
-RUN npm install
+# node-gyp のビルドに必要なツール（alpine）
+RUN apk add --no-cache python3 make g++ linux-headers
+
+# npm に Python の場所を伝える（isolated-vm 等のビルド用）
+ENV npm_config_python=/usr/bin/python3
+
+# pnpm を有効化してロックファイルでインストール
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY pnpm-lock.yaml ./
+RUN pnpm install --no-frozen-lockfile
 
 # ソースコードをコピー
 COPY . .

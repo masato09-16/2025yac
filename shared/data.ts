@@ -47,6 +47,7 @@ export interface Classroom {
   lastUpdated?: string;
   statusDetail?: string;
   activeClass?: ActiveClass;
+  imageUrl?: string;  // 解析結果画像のURL
 }
 
 // 建物マスターデータ

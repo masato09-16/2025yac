@@ -67,6 +67,7 @@ export interface ClassroomWithStatus {
   status: string;  // "available", "in-class", "occupied", "partially-occupied", "scheduled-low"
   status_detail: string;
   active_class?: ActiveClass;
+  image_url?: string;  // 解析結果画像のURL
 }
 
 export interface ClassSchedule {

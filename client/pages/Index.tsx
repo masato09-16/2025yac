@@ -3,7 +3,7 @@ import Header from '@/components/Header';
 import SearchFilters, { SearchFiltersValue } from '@/components/SearchFilters';
 import ClassroomCard from '@/components/ClassroomCard';
 import { FACULTY_NAMES, type Classroom as SharedClassroom, type Faculty } from '@shared/data';
-import { GraduationCap } from 'lucide-react';
+import { GraduationCap, TrendingUp, AlertCircle, Info } from 'lucide-react';
 import { getClassroomsWithStatus } from '@/lib/api';
 
 const PERIODS = [
@@ -87,6 +87,7 @@ export default function Index() {
             lastUpdated: occupancy?.last_updated || new Date().toISOString(),
             statusDetail: item.status_detail,
             activeClass: item.active_class,
+            imageUrl: item.image_url,
           };
         });
         
@@ -167,69 +168,89 @@ export default function Index() {
       <SearchFilters onSearch={handleSearch} />
 
       {/* Results Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         {/* Loading State */}
         {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-ynu-blue border-r-transparent"></div>
-            <p className="mt-4 text-gray-600">データを読み込んでいます...</p>
+          <div className="text-center py-12 sm:py-16 lg:py-20">
+            <div className="inline-block h-12 w-12 sm:h-16 sm:w-16 animate-spin rounded-full border-4 border-solid border-ynu-blue border-r-transparent"></div>
+            <p className="mt-4 sm:mt-6 text-gray-600 text-sm sm:text-base">データを読み込んでいます...</p>
           </div>
         )}
 
         {/* Error State */}
         {error && !loading && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-600 font-medium">{error}</p>
-            <p className="text-sm text-red-500 mt-2">バックエンドサーバーが起動していることを確認してください</p>
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 sm:p-8 text-center shadow-lg">
+            <AlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-red-500 mx-auto mb-4" />
+            <p className="text-red-700 font-bold text-base sm:text-lg mb-2">{error}</p>
+            <p className="text-sm sm:text-base text-red-600">バックエンドサーバーが起動していることを確認してください</p>
           </div>
         )}
 
-        {/* Results Header with stats */}
+        {/* Results Header with stats (視覚的階層: 重要な情報を上部に) */}
         {!loading && !error && (
-          <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h2 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-ynu-blue to-ynu-blue-dark bg-clip-text text-transparent mb-2">
-              {currentFilters.searchMode === 'now' ? '現在の教室一覧' : '指定日時の教室一覧'}
-            </h2>
-            <p className="text-base sm:text-lg text-gray-600 font-medium">
-              {currentFilters.searchMode === 'future' && currentFilters.targetDate && (
-                <span className="text-ynu-blue font-semibold mr-2">
-                  📅 {currentFilters.targetDate} {PERIODS.find(p => p.id === currentFilters.period)?.name}
-                </span>
-              )}
-              全 {displayedClassrooms.length} 件中 {availableCount} 件が利用可能です
-            </p>
-          </div>
-          
-          {/* Stats badges */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 bg-green-50 backdrop-blur-sm px-4 py-2 rounded-full shadow-md border border-green-200">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse-subtle"></div>
-              <span className="text-sm font-semibold text-green-700">
-                空き: {availableCount}件
-              </span>
-            </div>
-            <div className="flex items-center gap-2 bg-red-50 backdrop-blur-sm px-4 py-2 rounded-full shadow-md border border-red-200">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-sm font-semibold text-red-700">
-                使用中: {inUseCount}件
-              </span>
-            </div>
-            {noDataCount > 0 && (
-              <div className="flex items-center gap-2 bg-gray-50 backdrop-blur-sm px-4 py-2 rounded-full shadow-md border border-gray-200">
-                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                <span className="text-sm font-semibold text-gray-600">
-                  データなし: {noDataCount}件
-                </span>
+          <div className="mb-4 sm:mb-6">
+            {/* タイトルと統計を横並びに */}
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+              <div className="flex-1 min-w-0">
+                <h2 className="
+                  text-base sm:text-lg lg:text-xl font-bold 
+                  bg-gradient-to-r from-ynu-blue to-ynu-blue-dark bg-clip-text text-transparent 
+                  mb-1
+                ">
+                  {currentFilters.searchMode === 'now' ? '現在の教室一覧' : '指定日時の教室一覧'}
+                </h2>
+                <p className="text-xs text-gray-600">
+                  {currentFilters.searchMode === 'future' && currentFilters.targetDate && (
+                    <span className="text-ynu-blue font-semibold mr-1.5">
+                      📅 {currentFilters.targetDate} {PERIODS.find(p => p.id === currentFilters.period)?.name}
+                    </span>
+                  )}
+                  全 {displayedClassrooms.length} 件
+                </p>
               </div>
-            )}
+              
+              {/* Stats badges (タイトルの横に配置) */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="
+                  flex items-center gap-1.5
+                  bg-green-50 px-2.5 py-1.5
+                  rounded-full shadow-sm border border-green-200
+                ">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-xs font-semibold text-green-700">
+                    空き: {availableCount}
+                  </span>
+                </div>
+                <div className="
+                  flex items-center gap-1.5
+                  bg-red-50 px-2.5 py-1.5
+                  rounded-full shadow-sm border border-red-200
+                ">
+                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <span className="text-xs font-semibold text-red-700">
+                    使用中: {inUseCount}
+                  </span>
+                </div>
+                {noDataCount > 0 && (
+                  <div className="
+                    flex items-center gap-1.5
+                    bg-gray-50 px-2.5 py-1.5
+                    rounded-full shadow-sm border border-gray-200
+                  ">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                    <span className="text-xs font-semibold text-gray-600">
+                      データなし: {noDataCount}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
         )}
 
         {/* Display classrooms grouped by faculty */}
         {!loading && !error && Object.keys(classroomsByFaculty).length > 0 ? (
-          <div className="space-y-12">
+          <div className="space-y-8 sm:space-y-12 lg:space-y-16">
             {Object.entries(classroomsByFaculty).map(([faculty, classrooms]) => {
               const facultyName = FACULTY_NAMES[faculty as keyof typeof FACULTY_NAMES];
               const facultyAvailable = classrooms.filter(c => {
@@ -239,19 +260,51 @@ export default function Index() {
               
               return (
                 <div key={faculty} className="animate-fadeInUp">
-                  {/* Faculty Header */}
-                  <div className="mb-6 flex items-center gap-3">
-                    <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-ynu-blue to-ynu-blue-dark rounded-xl shadow-lg">
-                      <GraduationCap className="w-6 h-6 text-white" />
+                  {/* Faculty Header (視覚的階層: セクション区切り) */}
+                  <div className="
+                    mb-3 sm:mb-4 lg:mb-5 
+                    flex items-center gap-2 sm:gap-3
+                    p-2.5 sm:p-3 bg-white rounded-xl shadow-md border-2 border-gray-100
+                  ">
+                    <div className="
+                      flex items-center justify-center 
+                      w-8 h-8 sm:w-10 sm:h-10
+                      bg-gradient-to-br from-ynu-blue to-ynu-blue-dark 
+                      rounded-lg shadow-lg
+                      flex-shrink-0
+                    ">
+                      <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                     </div>
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-bold text-gray-900">{facultyName?.full || faculty}</h3>
-                      <p className="text-sm text-gray-600">{facultyAvailable} 件の教室が利用可能</p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="
+                        text-base sm:text-lg lg:text-xl font-bold text-gray-900
+                        mb-0.5
+                      ">
+                        {facultyName?.full || faculty}
+                      </h3>
+                      <div className="flex items-center gap-1.5">
+                        <TrendingUp className="w-3 h-3 text-green-600" />
+                        <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                          {facultyAvailable} 件の教室が利用可能
+                        </p>
+                      </div>
                     </div>
                   </div>
                   
-                  {/* Classroom Cards Grid - 4 columns on desktop */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {/* Classroom Cards Grid 
+                     モバイル: 2カラム（コンパクトに）
+                     タブレット: 3カラム
+                     デスクトップ: 5-6カラム（効率的な情報表示）
+                  */}
+                  <div className="
+                    grid 
+                    grid-cols-2 
+                    sm:grid-cols-3 
+                    lg:grid-cols-4 
+                    xl:grid-cols-5 
+                    2xl:grid-cols-6
+                    gap-2 sm:gap-3 lg:gap-4
+                  ">
                     {classrooms.map((classroom, index) => (
                       <div 
                         key={classroom.id} 
@@ -267,17 +320,22 @@ export default function Index() {
             })}
           </div>
         ) : !loading && !error ? (
-          <div className="bg-white rounded-2xl shadow-xl p-12 sm:p-16 text-center border-2 border-dashed border-gray-300">
+          <div className="
+            bg-white rounded-2xl shadow-xl p-8 sm:p-12 lg:p-16 
+            text-center border-2 border-dashed border-gray-300
+          ">
             <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+              <div className="
+                w-16 h-16 sm:w-20 sm:h-20 
+                bg-gray-100 rounded-full mx-auto mb-4 sm:mb-6 
+                flex items-center justify-center
+              ">
+                <Info className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
               </div>
-              <p className="text-gray-600 text-lg font-medium mb-2">
+              <p className="text-gray-600 text-base sm:text-lg lg:text-xl font-bold mb-2">
                 該当する教室がありません
               </p>
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-500 text-sm sm:text-base">
                 別の検索条件を試してください。
               </p>
             </div>

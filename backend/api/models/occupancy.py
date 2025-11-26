@@ -36,4 +36,7 @@ class ClassroomWithOccupancy(BaseModel):
     is_available: bool
     occupancy_rate: float
     status: str  # 'available' or 'in-use'
+    status_detail: Optional[str] = None
+    active_class: Optional[dict] = None
+    image_url: Optional[str] = None  # 解析結果画像のURL
 

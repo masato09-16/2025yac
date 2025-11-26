@@ -152,6 +152,12 @@ async def get_classrooms_with_status(
             
             is_available = (status in ["available", "partially-occupied"])
         
+        # 解析結果画像のURLを構築（存在する場合）
+        from pathlib import Path
+        backend_dir = Path(__file__).parent.parent.parent
+        processed_image_path = backend_dir / "static" / "processed" / f"{classroom.id}.jpg"
+        image_url = f"/static/processed/{classroom.id}.jpg" if processed_image_path.exists() else None
+        
         result.append({
             "classroom": {
                 "id": classroom.id,
@@ -179,6 +185,7 @@ async def get_classrooms_with_status(
                 "start_time": str(active_schedule.start_time),
                 "end_time": str(active_schedule.end_time),
             } if active_schedule else None,
+            "image_url": image_url,
         })
     
     return result

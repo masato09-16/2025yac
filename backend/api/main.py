@@ -3,11 +3,13 @@ FastAPI main application
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import logging
+from pathlib import Path
 
 from config import settings
-from api.routes import classrooms, occupancy, schedules
+from api.routes import classrooms, occupancy, schedules, camera
 from camera.processor import CameraProcessor
 from utils.db_init import init_database
 
@@ -65,6 +67,14 @@ app.add_middleware(
 app.include_router(classrooms.router, prefix=settings.api_v1_prefix)
 app.include_router(occupancy.router, prefix=settings.api_v1_prefix)
 app.include_router(schedules.router, prefix=settings.api_v1_prefix)
+app.include_router(camera.router, prefix=settings.api_v1_prefix)
+
+# 静的ファイルのマウント（解析結果画像をブラウザで表示可能にする）
+# backendディレクトリを基準にstaticディレクトリを指定
+backend_dir = Path(__file__).parent.parent
+static_dir = backend_dir / "static"
+static_dir.mkdir(exist_ok=True)
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
 @app.get("/")

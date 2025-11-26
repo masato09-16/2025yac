@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Edit2, Calendar, Clock, BookOpen, Save, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Calendar, Clock, BookOpen, Save, X, Building2, Users, Wifi, Plug, Projector, Search, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { FACULTY_NAMES, BUILDINGS, type Faculty } from '@shared/data';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -28,9 +30,14 @@ interface Classroom {
   room_number: string;
   building_id: string;
   faculty: string;
+  floor: number;
+  capacity: number;
+  has_projector: boolean;
+  has_wifi: boolean;
+  has_power_outlets: boolean;
 }
 
-const DAY_NAMES = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日', '日曜日'];
+const DAY_NAMES = ['月', '火', '水', '木', '金', '土', '日'];
 const PERIOD_TIMES: { [key: number]: [string, string] } = {
   1: ['08:50:00', '10:20:00'],
   2: ['10:30:00', '12:00:00'],
@@ -42,14 +49,24 @@ const PERIOD_TIMES: { [key: number]: [string, string] } = {
 };
 
 export default function Admin() {
+  const [activeTab, setActiveTab] = useState<'classrooms' | 'schedules'>('classrooms');
+  
+  // Schedules state
   const [schedules, setSchedules] = useState<ClassSchedule[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editingSchedule, setEditingSchedule] = useState<ClassSchedule | null>(null);
-  const [isAdding, setIsAdding] = useState(false);
+  const [isAddingSchedule, setIsAddingSchedule] = useState(false);
+  const [scheduleFilter, setScheduleFilter] = useState({ classroom_id: '', day_of_week: '' });
 
-  // Form state
-  const [formData, setFormData] = useState({
+  // Classrooms state
+  const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
+  const [isAddingClassroom, setIsAddingClassroom] = useState(false);
+  const [classroomFilter, setClassroomFilter] = useState({ faculty: '', building_id: '' });
+
+  // Form states
+  const [scheduleFormData, setScheduleFormData] = useState({
     classroom_id: '',
     class_name: '',
     instructor: '',
@@ -59,6 +76,18 @@ export default function Admin() {
     course_code: '',
   });
 
+  const [classroomFormData, setClassroomFormData] = useState({
+    id: '',
+    room_number: '',
+    building_id: '',
+    faculty: 'education' as Faculty,
+    floor: 1,
+    capacity: 50,
+    has_projector: true,
+    has_wifi: true,
+    has_power_outlets: true,
+  });
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -66,10 +95,19 @@ export default function Admin() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       const [schedulesRes, classroomsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/v1/schedules/`),
         fetch(`${API_BASE_URL}/api/v1/classrooms/`),
       ]);
+
+      if (!schedulesRes.ok) {
+        throw new Error(`Failed to fetch schedules: ${schedulesRes.status} ${schedulesRes.statusText}`);
+      }
+      if (!classroomsRes.ok) {
+        throw new Error(`Failed to fetch classrooms: ${classroomsRes.status} ${classroomsRes.statusText}`);
+      }
 
       const schedulesData = await schedulesRes.json();
       const classroomsData = await classroomsRes.json();
@@ -78,32 +116,33 @@ export default function Admin() {
       setClassrooms(classroomsData);
     } catch (error) {
       console.error('Failed to fetch data:', error);
+      setError(error instanceof Error ? error.message : 'データの取得に失敗しました');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // ============= Schedule Management =============
+  const handleScheduleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const period = parseInt(formData.period);
+    const period = parseInt(scheduleFormData.period);
     const [start_time, end_time] = PERIOD_TIMES[period];
 
     const scheduleData = {
-      classroom_id: formData.classroom_id,
-      class_name: formData.class_name,
-      instructor: formData.instructor || undefined,
-      day_of_week: parseInt(formData.day_of_week),
+      classroom_id: scheduleFormData.classroom_id,
+      class_name: scheduleFormData.class_name,
+      instructor: scheduleFormData.instructor || undefined,
+      day_of_week: parseInt(scheduleFormData.day_of_week),
       period,
       start_time,
       end_time,
-      semester: formData.semester || undefined,
-      course_code: formData.course_code || undefined,
+      semester: scheduleFormData.semester || undefined,
+      course_code: scheduleFormData.course_code || undefined,
     };
 
     try {
       if (editingSchedule) {
-        // Update existing schedule
         const response = await fetch(`${API_BASE_URL}/api/v1/schedules/${editingSchedule.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -113,10 +152,9 @@ export default function Admin() {
         if (response.ok) {
           await fetchData();
           setEditingSchedule(null);
-          resetForm();
+          resetScheduleForm();
         }
       } else {
-        // Create new schedule
         const response = await fetch(`${API_BASE_URL}/api/v1/schedules/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -125,16 +163,17 @@ export default function Admin() {
 
         if (response.ok) {
           await fetchData();
-          setIsAdding(false);
-          resetForm();
+          setIsAddingSchedule(false);
+          resetScheduleForm();
         }
       }
     } catch (error) {
       console.error('Failed to save schedule:', error);
+      alert('保存に失敗しました');
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleScheduleDelete = async (id: string) => {
     if (!confirm('この授業スケジュールを削除しますか？')) return;
 
     try {
@@ -147,12 +186,13 @@ export default function Admin() {
       }
     } catch (error) {
       console.error('Failed to delete schedule:', error);
+      alert('削除に失敗しました');
     }
   };
 
-  const handleEdit = (schedule: ClassSchedule) => {
+  const handleScheduleEdit = (schedule: ClassSchedule) => {
     setEditingSchedule(schedule);
-    setFormData({
+    setScheduleFormData({
       classroom_id: schedule.classroom_id,
       class_name: schedule.class_name,
       instructor: schedule.instructor || '',
@@ -161,11 +201,11 @@ export default function Admin() {
       semester: schedule.semester || '前期',
       course_code: schedule.course_code || '',
     });
-    setIsAdding(true);
+    setIsAddingSchedule(true);
   };
 
-  const resetForm = () => {
-    setFormData({
+  const resetScheduleForm = () => {
+    setScheduleFormData({
       classroom_id: '',
       class_name: '',
       instructor: '',
@@ -176,285 +216,827 @@ export default function Admin() {
     });
   };
 
-  const cancelEdit = () => {
-    setEditingSchedule(null);
-    setIsAdding(false);
-    resetForm();
+  // ============= Classroom Management =============
+  const handleClassroomSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      if (editingClassroom) {
+        const response = await fetch(`${API_BASE_URL}/api/v1/classrooms/${editingClassroom.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            room_number: classroomFormData.room_number,
+            building_id: classroomFormData.building_id,
+            faculty: classroomFormData.faculty,
+            floor: classroomFormData.floor,
+            capacity: classroomFormData.capacity,
+            has_projector: classroomFormData.has_projector,
+            has_wifi: classroomFormData.has_wifi,
+            has_power_outlets: classroomFormData.has_power_outlets,
+          }),
+        });
+
+        if (response.ok) {
+          await fetchData();
+          setEditingClassroom(null);
+          resetClassroomForm();
+        } else {
+          const error = await response.json();
+          alert(`更新に失敗しました: ${error.detail || '不明なエラー'}`);
+        }
+      } else {
+        const response = await fetch(`${API_BASE_URL}/api/v1/classrooms/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(classroomFormData),
+        });
+
+        if (response.ok) {
+          await fetchData();
+          setIsAddingClassroom(false);
+          resetClassroomForm();
+        } else {
+          const error = await response.json();
+          alert(`作成に失敗しました: ${error.detail || '不明なエラー'}`);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save classroom:', error);
+      alert('保存に失敗しました');
+    }
   };
 
-  const groupedSchedules = schedules.reduce((acc, schedule) => {
-    const day = schedule.day_of_week;
-    if (!acc[day]) acc[day] = [];
-    acc[day].push(schedule);
+  const handleClassroomDelete = async (id: string) => {
+    if (!confirm('この教室を削除しますか？関連する授業スケジュールも削除される可能性があります。')) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/classrooms/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await fetchData();
+      } else {
+        const error = await response.json();
+        alert(`削除に失敗しました: ${error.detail || '不明なエラー'}`);
+      }
+    } catch (error) {
+      console.error('Failed to delete classroom:', error);
+      alert('削除に失敗しました');
+    }
+  };
+
+  const handleClassroomEdit = (classroom: Classroom) => {
+    setEditingClassroom(classroom);
+    setClassroomFormData({
+      id: classroom.id,
+      room_number: classroom.room_number,
+      building_id: classroom.building_id,
+      faculty: classroom.faculty as Faculty,
+      floor: classroom.floor,
+      capacity: classroom.capacity,
+      has_projector: classroom.has_projector,
+      has_wifi: classroom.has_wifi,
+      has_power_outlets: classroom.has_power_outlets,
+    });
+    setIsAddingClassroom(true);
+  };
+
+  const resetClassroomForm = () => {
+    setClassroomFormData({
+      id: '',
+      room_number: '',
+      building_id: '',
+      faculty: 'education',
+      floor: 1,
+      capacity: 50,
+      has_projector: true,
+      has_wifi: true,
+      has_power_outlets: true,
+    });
+  };
+
+  // 教室IDを自動生成（建物ID + 階層 + 部屋番号から）
+  const generateClassroomId = () => {
+    if (classroomFormData.building_id && classroomFormData.room_number) {
+      const buildingPrefix = classroomFormData.building_id.replace('-', '');
+      const roomNum = classroomFormData.room_number.replace(/[^0-9]/g, '');
+      return `${buildingPrefix}-${classroomFormData.floor}${roomNum}`.toLowerCase();
+    }
+    return '';
+  };
+
+  // フォームデータが変更されたらIDを自動更新
+  useEffect(() => {
+    if (!editingClassroom && classroomFormData.building_id && classroomFormData.room_number) {
+      const autoId = generateClassroomId();
+      if (autoId) {
+        setClassroomFormData(prev => ({ ...prev, id: autoId }));
+      }
+    }
+  }, [classroomFormData.building_id, classroomFormData.room_number, classroomFormData.floor]);
+
+  // フィルタリング
+  const filteredSchedules = schedules.filter(s => {
+    if (scheduleFilter.classroom_id && s.classroom_id !== scheduleFilter.classroom_id) return false;
+    if (scheduleFilter.day_of_week && s.day_of_week.toString() !== scheduleFilter.day_of_week) return false;
+    return true;
+  });
+
+  const filteredClassrooms = classrooms.filter(c => {
+    if (classroomFilter.faculty && c.faculty !== classroomFilter.faculty) return false;
+    if (classroomFilter.building_id && c.building_id !== classroomFilter.building_id) return false;
+    return true;
+  });
+
+  // 教室ごとにスケジュールをグループ化
+  const schedulesByClassroom = filteredSchedules.reduce((acc, schedule) => {
+    if (!acc[schedule.classroom_id]) acc[schedule.classroom_id] = [];
+    acc[schedule.classroom_id].push(schedule);
     return acc;
-  }, {} as { [key: number]: ClassSchedule[] });
+  }, {} as { [key: string]: ClassSchedule[] });
+
+  // エラー表示
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">エラーが発生しました</h1>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <p className="text-sm text-gray-500 mb-4">
+            API URL: {API_BASE_URL}
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setError(null);
+                fetchData();
+              }}
+              className="px-4 py-2 bg-ynu-blue text-white rounded hover:bg-ynu-blue-dark"
+            >
+              再試行
+            </button>
+            <Link to="/">
+              <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">
+                ホームに戻る
+              </button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3">
               <Link to="/">
-                <Button variant="outline" size="sm">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
+                <Button variant="outline" size="sm" className="text-xs h-7 px-2">
+                  <ArrowLeft className="w-3 h-3 mr-1" />
                   戻る
                 </Button>
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">管理画面</h1>
-                <p className="text-sm text-gray-600 mt-1">授業スケジュールの管理</p>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">管理画面</h1>
+                <p className="text-xs text-gray-600 mt-0.5">教室と授業スケジュールの管理</p>
               </div>
             </div>
-            <Button onClick={() => setIsAdding(!isAdding)} className="bg-ynu-blue hover:bg-ynu-blue-dark">
-              <Plus className="w-4 h-4 mr-2" />
-              新規追加
-            </Button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Add/Edit Form */}
-        {isAdding && (
-          <Card className="mb-8 border-ynu-blue shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-ynu-blue to-ynu-blue-dark text-white">
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5" />
-                {editingSchedule ? '授業スケジュール編集' : '新規授業スケジュール追加'}
-              </CardTitle>
-              <CardDescription className="text-blue-100">
-                授業情報を入力してください
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Classroom Selection */}
-                  <div className="space-y-2">
-                    <Label htmlFor="classroom_id">教室 *</Label>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'classrooms' | 'schedules')} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4 h-9">
+            <TabsTrigger value="classrooms" className="flex items-center gap-1.5 text-sm">
+              <Building2 className="w-3.5 h-3.5" />
+              教室管理
+            </TabsTrigger>
+            <TabsTrigger value="schedules" className="flex items-center gap-1.5 text-sm">
+              <Calendar className="w-3.5 h-3.5" />
+              授業管理
+            </TabsTrigger>
+          </TabsList>
+
+          {/* ============= 教室管理タブ ============= */}
+          <TabsContent value="classrooms" className="space-y-6">
+            {/* 教室追加/編集フォーム */}
+            {isAddingClassroom && (
+              <Card className="border-ynu-blue shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-ynu-blue to-ynu-blue-dark text-white py-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Building2 className="w-4 h-4" />
+                    {editingClassroom ? '教室編集' : '新規教室追加'}
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 text-xs">
+                    教室情報を入力してください
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <form onSubmit={handleClassroomSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* 教室ID（編集時のみ表示、新規作成時は自動生成） */}
+                      {editingClassroom && (
+                        <div className="space-y-2">
+                          <Label htmlFor="classroom_id">教室ID</Label>
+                          <Input
+                            id="classroom_id"
+                            value={classroomFormData.id}
+                            disabled
+                            className="bg-gray-100"
+                          />
+                        </div>
+                      )}
+
+                      {/* 部屋番号 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="room_number">部屋番号 *</Label>
+                        <Input
+                          id="room_number"
+                          value={classroomFormData.room_number}
+                          onChange={(e) => setClassroomFormData({ ...classroomFormData, room_number: e.target.value })}
+                          placeholder="例: 6-101"
+                          required
+                        />
+                      </div>
+
+                      {/* 学部 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="faculty">学部 *</Label>
+                        <Select
+                          value={classroomFormData.faculty}
+                          onValueChange={(value) => {
+                            setClassroomFormData({ ...classroomFormData, faculty: value as Faculty });
+                            // 学部が変わったら建物もリセット
+                            setClassroomFormData(prev => ({ ...prev, building_id: '' }));
+                          }}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(FACULTY_NAMES).map(([id, names]) => (
+                              <SelectItem key={id} value={id}>
+                                {names.full}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* 建物 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="building_id">建物 *</Label>
+                        <Select
+                          value={classroomFormData.building_id}
+                          onValueChange={(value) => setClassroomFormData({ ...classroomFormData, building_id: value })}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="建物を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BUILDINGS.filter(b => b.faculty === classroomFormData.faculty).map((building) => (
+                              <SelectItem key={building.id} value={building.id}>
+                                {building.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* 階層 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="floor">階層 *</Label>
+                        <Input
+                          id="floor"
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={classroomFormData.floor}
+                          onChange={(e) => setClassroomFormData({ ...classroomFormData, floor: parseInt(e.target.value) || 1 })}
+                          required
+                        />
+                      </div>
+
+                      {/* 定員 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="capacity">定員 *</Label>
+                        <Input
+                          id="capacity"
+                          type="number"
+                          min="1"
+                          value={classroomFormData.capacity}
+                          onChange={(e) => setClassroomFormData({ ...classroomFormData, capacity: parseInt(e.target.value) || 50 })}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* 設備 */}
+                    <div className="space-y-3">
+                      <Label>設備</Label>
+                      <div className="flex flex-wrap gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="has_projector"
+                            checked={classroomFormData.has_projector}
+                            onCheckedChange={(checked) => setClassroomFormData({ ...classroomFormData, has_projector: checked as boolean })}
+                          />
+                          <Label htmlFor="has_projector" className="flex items-center gap-1 cursor-pointer">
+                            <Projector className="w-4 h-4" />
+                            プロジェクター
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="has_wifi"
+                            checked={classroomFormData.has_wifi}
+                            onCheckedChange={(checked) => setClassroomFormData({ ...classroomFormData, has_wifi: checked as boolean })}
+                          />
+                          <Label htmlFor="has_wifi" className="flex items-center gap-1 cursor-pointer">
+                            <Wifi className="w-4 h-4" />
+                            Wi-Fi
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="has_power_outlets"
+                            checked={classroomFormData.has_power_outlets}
+                            onCheckedChange={(checked) => setClassroomFormData({ ...classroomFormData, has_power_outlets: checked as boolean })}
+                          />
+                          <Label htmlFor="has_power_outlets" className="flex items-center gap-1 cursor-pointer">
+                            <Plug className="w-4 h-4" />
+                            電源コンセント
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 justify-end pt-4">
+                      <Button type="button" variant="outline" onClick={() => {
+                        setIsAddingClassroom(false);
+                        setEditingClassroom(null);
+                        resetClassroomForm();
+                      }}>
+                        <X className="w-4 h-4 mr-2" />
+                        キャンセル
+                      </Button>
+                      <Button type="submit" className="bg-ynu-blue hover:bg-ynu-blue-dark">
+                        <Save className="w-4 h-4 mr-2" />
+                        {editingClassroom ? '更新' : '追加'}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 教室一覧 */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Building2 className="w-4 h-4" />
+                      教室一覧
+                    </CardTitle>
+                    <CardDescription className="text-xs">登録済みの教室 ({filteredClassrooms.length}件)</CardDescription>
+                  </div>
+                  <Button onClick={() => {
+                    setIsAddingClassroom(true);
+                    setEditingClassroom(null);
+                    resetClassroomForm();
+                  }} className="bg-ynu-blue hover:bg-ynu-blue-dark">
+                    <Plus className="w-4 h-4 mr-2" />
+                    新規追加
+                  </Button>
+                </div>
+
+                {/* フィルター */}
+                <div className="flex flex-wrap gap-3 mt-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-500" />
                     <Select
-                      value={formData.classroom_id}
-                      onValueChange={(value) => setFormData({ ...formData, classroom_id: value })}
-                      required
+                      value={classroomFilter.faculty}
+                      onValueChange={(value) => setClassroomFilter({ ...classroomFilter, faculty: value })}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="教室を選択" />
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="学部で絞り込み" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="">すべて</SelectItem>
+                        {Object.entries(FACULTY_NAMES).map(([id, names]) => (
+                          <SelectItem key={id} value={id}>
+                            {names.full}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Select
+                    value={classroomFilter.building_id}
+                    onValueChange={(value) => setClassroomFilter({ ...classroomFilter, building_id: value })}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="建物で絞り込み" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">すべて</SelectItem>
+                      {BUILDINGS.filter(b => !classroomFilter.faculty || b.faculty === classroomFilter.faculty).map((building) => (
+                        <SelectItem key={building.id} value={building.id}>
+                          {building.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-ynu-blue border-r-transparent"></div>
+                    <p className="mt-4 text-gray-600">読み込み中...</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredClassrooms.map((classroom) => (
+                      <Card key={classroom.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h3 className="text-sm font-bold text-gray-900">{classroom.room_number}</h3>
+                              <p className="text-xs text-gray-600 mt-1">
+                                {FACULTY_NAMES[classroom.faculty as Faculty]?.full || classroom.faculty} / {classroom.floor}階
+                              </p>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleClassroomEdit(classroom)}
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleClassroomDelete(classroom.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 text-gray-500" />
+                              <span>定員: {classroom.capacity}名</span>
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {classroom.has_projector && (
+                                <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
+                                  <Projector className="w-3 h-3" />
+                                  プロジェクター
+                                </span>
+                              )}
+                              {classroom.has_wifi && (
+                                <span className="flex items-center gap-1 px-2 py-1 bg-green-50 text-green-700 rounded text-xs">
+                                  <Wifi className="w-3 h-3" />
+                                  Wi-Fi
+                                </span>
+                              )}
+                              {classroom.has_power_outlets && (
+                                <span className="flex items-center gap-1 px-2 py-1 bg-amber-50 text-amber-700 rounded text-xs">
+                                  <Plug className="w-3 h-3" />
+                                  電源
+                                </span>
+                              )}
+                            </div>
+                            {/* この教室の授業数 */}
+                            <div className="pt-2 border-t">
+                              <span className="text-xs text-gray-500">
+                                登録授業: {schedules.filter(s => s.classroom_id === classroom.id).length}件
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ============= 授業管理タブ ============= */}
+          <TabsContent value="schedules" className="space-y-6">
+            {/* 授業追加/編集フォーム */}
+            {isAddingSchedule && (
+              <Card className="border-ynu-blue shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-ynu-blue to-ynu-blue-dark text-white py-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <BookOpen className="w-4 h-4" />
+                    {editingSchedule ? '授業スケジュール編集' : '新規授業スケジュール追加'}
+                  </CardTitle>
+                  <CardDescription className="text-blue-100 text-xs">
+                    授業情報を入力してください
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <form onSubmit={handleScheduleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* 教室選択 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="classroom_id">教室 *</Label>
+                        <Select
+                          value={scheduleFormData.classroom_id}
+                          onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, classroom_id: value })}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="教室を選択" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {classrooms.map((classroom) => (
+                              <SelectItem key={classroom.id} value={classroom.id}>
+                                {classroom.room_number} ({FACULTY_NAMES[classroom.faculty as Faculty]?.short || classroom.faculty})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* 授業名 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="class_name">授業名 *</Label>
+                        <Input
+                          id="class_name"
+                          value={scheduleFormData.class_name}
+                          onChange={(e) => setScheduleFormData({ ...scheduleFormData, class_name: e.target.value })}
+                          placeholder="例: 線形代数学"
+                          required
+                        />
+                      </div>
+
+                      {/* 教員名 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="instructor">教員名</Label>
+                        <Input
+                          id="instructor"
+                          value={scheduleFormData.instructor}
+                          onChange={(e) => setScheduleFormData({ ...scheduleFormData, instructor: e.target.value })}
+                          placeholder="例: 田中 教授"
+                        />
+                      </div>
+
+                      {/* 曜日 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="day_of_week">曜日 *</Label>
+                        <Select
+                          value={scheduleFormData.day_of_week}
+                          onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, day_of_week: value })}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DAY_NAMES.map((day, index) => (
+                              <SelectItem key={index} value={index.toString()}>
+                                {day}曜日
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* 時限 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="period">時限 *</Label>
+                        <Select
+                          value={scheduleFormData.period}
+                          onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, period: value })}
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(PERIOD_TIMES).map(([period, [start, end]]) => (
+                              <SelectItem key={period} value={period}>
+                                {period}時限 ({start.slice(0, 5)} - {end.slice(0, 5)})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* 学期 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="semester">学期</Label>
+                        <Select
+                          value={scheduleFormData.semester}
+                          onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, semester: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="前期">前期</SelectItem>
+                            <SelectItem value="後期">後期</SelectItem>
+                            <SelectItem value="通年">通年</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* 授業コード */}
+                      <div className="space-y-2">
+                        <Label htmlFor="course_code">授業コード</Label>
+                        <Input
+                          id="course_code"
+                          value={scheduleFormData.course_code}
+                          onChange={(e) => setScheduleFormData({ ...scheduleFormData, course_code: e.target.value })}
+                          placeholder="例: CS101"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 justify-end pt-4">
+                      <Button type="button" variant="outline" onClick={() => {
+                        setIsAddingSchedule(false);
+                        setEditingSchedule(null);
+                        resetScheduleForm();
+                      }}>
+                        <X className="w-4 h-4 mr-2" />
+                        キャンセル
+                      </Button>
+                      <Button type="submit" className="bg-ynu-blue hover:bg-ynu-blue-dark">
+                        <Save className="w-4 h-4 mr-2" />
+                        {editingSchedule ? '更新' : '追加'}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 授業一覧（教室ごとにグループ化） */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Calendar className="w-4 h-4" />
+                      授業スケジュール一覧
+                    </CardTitle>
+                    <CardDescription className="text-xs">登録済みの授業スケジュール ({filteredSchedules.length}件)</CardDescription>
+                  </div>
+                  <Button onClick={() => {
+                    setIsAddingSchedule(true);
+                    setEditingSchedule(null);
+                    resetScheduleForm();
+                  }} className="bg-ynu-blue hover:bg-ynu-blue-dark">
+                    <Plus className="w-4 h-4 mr-2" />
+                    新規追加
+                  </Button>
+                </div>
+
+                {/* フィルター */}
+                <div className="flex flex-wrap gap-3 mt-4">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-500" />
+                    <Select
+                      value={scheduleFilter.classroom_id}
+                      onValueChange={(value) => setScheduleFilter({ ...scheduleFilter, classroom_id: value })}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="教室で絞り込み" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">すべての教室</SelectItem>
                         {classrooms.map((classroom) => (
                           <SelectItem key={classroom.id} value={classroom.id}>
-                            {classroom.room_number} ({classroom.faculty})
+                            {classroom.room_number}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-
-                  {/* Class Name */}
-                  <div className="space-y-2">
-                    <Label htmlFor="class_name">授業名 *</Label>
-                    <Input
-                      id="class_name"
-                      value={formData.class_name}
-                      onChange={(e) => setFormData({ ...formData, class_name: e.target.value })}
-                      placeholder="例: 線形代数学"
-                      required
-                    />
-                  </div>
-
-                  {/* Instructor */}
-                  <div className="space-y-2">
-                    <Label htmlFor="instructor">教員名</Label>
-                    <Input
-                      id="instructor"
-                      value={formData.instructor}
-                      onChange={(e) => setFormData({ ...formData, instructor: e.target.value })}
-                      placeholder="例: 田中 教授"
-                    />
-                  </div>
-
-                  {/* Day of Week */}
-                  <div className="space-y-2">
-                    <Label htmlFor="day_of_week">曜日 *</Label>
                     <Select
-                      value={formData.day_of_week}
-                      onValueChange={(value) => setFormData({ ...formData, day_of_week: value })}
-                      required
+                      value={scheduleFilter.day_of_week}
+                      onValueChange={(value) => setScheduleFilter({ ...scheduleFilter, day_of_week: value })}
                     >
-                      <SelectTrigger>
-                        <SelectValue />
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="曜日で絞り込み" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="">すべて</SelectItem>
                         {DAY_NAMES.map((day, index) => (
                           <SelectItem key={index} value={index.toString()}>
-                            {day}
+                            {day}曜日
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-
-                  {/* Period */}
-                  <div className="space-y-2">
-                    <Label htmlFor="period">時限 *</Label>
-                    <Select
-                      value={formData.period}
-                      onValueChange={(value) => setFormData({ ...formData, period: value })}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(PERIOD_TIMES).map(([period, [start, end]]) => (
-                          <SelectItem key={period} value={period}>
-                            {period}時限 ({start.slice(0, 5)} - {end.slice(0, 5)})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Semester */}
-                  <div className="space-y-2">
-                    <Label htmlFor="semester">学期</Label>
-                    <Select
-                      value={formData.semester}
-                      onValueChange={(value) => setFormData({ ...formData, semester: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="前期">前期</SelectItem>
-                        <SelectItem value="後期">後期</SelectItem>
-                        <SelectItem value="通年">通年</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Course Code */}
-                  <div className="space-y-2">
-                    <Label htmlFor="course_code">授業コード</Label>
-                    <Input
-                      id="course_code"
-                      value={formData.course_code}
-                      onChange={(e) => setFormData({ ...formData, course_code: e.target.value })}
-                      placeholder="例: CS101"
-                    />
-                  </div>
                 </div>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-ynu-blue border-r-transparent"></div>
+                    <p className="mt-4 text-gray-600">読み込み中...</p>
+                  </div>
+                ) : filteredSchedules.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <p className="text-gray-500">授業スケジュールが登録されていません</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* 教室ごとにグループ化して表示 */}
+                    {Object.entries(schedulesByClassroom).map(([classroomId, classroomSchedules]) => {
+                      const classroom = classrooms.find(c => c.id === classroomId);
+                      if (!classroom) return null;
 
-                <div className="flex gap-3 justify-end">
-                  <Button type="button" variant="outline" onClick={cancelEdit}>
-                    <X className="w-4 h-4 mr-2" />
-                    キャンセル
-                  </Button>
-                  <Button type="submit" className="bg-ynu-blue hover:bg-ynu-blue-dark">
-                    <Save className="w-4 h-4 mr-2" />
-                    {editingSchedule ? '更新' : '追加'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Schedule List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              授業スケジュール一覧
-            </CardTitle>
-            <CardDescription>登録済みの授業スケジュール ({schedules.length}件)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-ynu-blue border-r-transparent"></div>
-                <p className="mt-4 text-gray-600">読み込み中...</p>
-              </div>
-            ) : (
-              <Tabs defaultValue="0" className="w-full">
-                <TabsList className="grid w-full grid-cols-7">
-                  {DAY_NAMES.map((day, index) => (
-                    <TabsTrigger key={index} value={index.toString()}>
-                      {day.slice(0, 1)}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                {DAY_NAMES.map((day, dayIndex) => (
-                  <TabsContent key={dayIndex} value={dayIndex.toString()} className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">{day}</h3>
-                    {groupedSchedules[dayIndex] && groupedSchedules[dayIndex].length > 0 ? (
-                      <div className="space-y-3">
-                        {groupedSchedules[dayIndex]
-                          .sort((a, b) => a.period - b.period)
-                          .map((schedule) => {
-                            const classroom = classrooms.find((c) => c.id === schedule.classroom_id);
-                            return (
-                              <div
-                                key={schedule.id}
-                                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-ynu-blue transition-colors"
-                              >
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <span className="px-2 py-1 bg-ynu-blue text-white text-xs font-bold rounded">
-                                      {schedule.period}限
-                                    </span>
-                                    <h4 className="font-bold text-gray-900">{schedule.class_name}</h4>
-                                    {schedule.semester && (
-                                      <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded">
-                                        {schedule.semester}
+                      return (
+                        <div key={classroomId} className="border rounded-lg p-4 bg-white">
+                          <div className="flex items-center justify-between mb-4 pb-3 border-b">
+                            <div>
+                              <h3 className="text-sm font-bold text-gray-900">{classroom.room_number}</h3>
+                              <p className="text-xs text-gray-600">
+                                {FACULTY_NAMES[classroom.faculty as Faculty]?.full || classroom.faculty} / {classroom.floor}階
+                              </p>
+                            </div>
+                            <span className="text-sm text-gray-500">{classroomSchedules.length}件の授業</span>
+                          </div>
+                          <div className="space-y-2">
+                            {classroomSchedules
+                              .sort((a, b) => {
+                                if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week;
+                                return a.period - b.period;
+                              })
+                              .map((schedule) => (
+                                <div
+                                  key={schedule.id}
+                                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:border-ynu-blue transition-colors"
+                                >
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-1 flex-wrap">
+                                      <span className="px-2 py-0.5 bg-ynu-blue text-white text-xs font-bold rounded">
+                                        {DAY_NAMES[schedule.day_of_week]}{schedule.period}限
                                       </span>
-                                    )}
+                                      <h4 className="font-bold text-gray-900 text-sm">{schedule.class_name}</h4>
+                                      {schedule.semester && (
+                                        <span className="px-2 py-0.5 bg-gray-200 text-gray-700 text-xs rounded">
+                                          {schedule.semester}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-4 text-xs text-gray-600 flex-wrap">
+                                      {schedule.instructor && <span>👤 {schedule.instructor}</span>}
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
+                                      </span>
+                                      {schedule.course_code && <span>📝 {schedule.course_code}</span>}
+                                    </div>
                                   </div>
-                                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                                    <span>📍 {classroom?.room_number || schedule.classroom_id}</span>
-                                    {schedule.instructor && <span>👤 {schedule.instructor}</span>}
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="w-3.5 h-3.5" />
-                                      {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
-                                    </span>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleScheduleEdit(schedule)}
+                                    >
+                                      <Edit2 className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleScheduleDelete(schedule.id)}
+                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
                                   </div>
                                 </div>
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEdit(schedule)}
-                                  >
-                                    <Edit2 className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleDelete(schedule.id)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 bg-gray-50 rounded-lg">
-                        <p className="text-gray-500">この曜日には授業が登録されていません</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                ))}
-              </Tabs>
-            )}
-          </CardContent>
-        </Card>
+                              ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
 }
-

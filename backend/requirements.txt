@@ -22,6 +22,8 @@ python-dotenv>=1.0.0
 
 # Utilities
 python-jose[cryptography]>=3.3.0
+authlib>=1.2.0
+httpx-oauth>=0.11.0
 
 # Development (optional)
 pytest>=7.4.0

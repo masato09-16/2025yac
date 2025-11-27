@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ChevronDown, Search, Building2, Clock, Calendar, GraduationCap, Filter, X, ChevronUp } from 'lucide-react';
+import { ChevronDown, Search, Building2, Clock, Calendar, GraduationCap, Filter, X, ChevronUp, Star } from 'lucide-react';
 import { FACULTY_NAMES, type Faculty, BUILDINGS } from '@shared/data';
+import { useAuth } from '@/contexts/AuthContext';
 
 const PERIODS = [
   { id: '1', name: '1限', time: '8:50-10:20' },
@@ -16,7 +17,7 @@ export interface SearchFiltersValue {
   faculty: Faculty | 'all';
   building: string;
   period: string;
-  status: 'all' | 'available' | 'in-use' | 'no-data';
+  status: 'all' | 'available' | 'in-use' | 'no-data' | 'favorites';
   searchMode: 'now' | 'future';
   targetDate?: string; // YYYY-MM-DD format
 }
@@ -26,6 +27,7 @@ interface SearchFiltersProps {
 }
 
 export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
+  const { isAuthenticated } = useAuth();
   const [filters, setFilters] = useState<SearchFiltersValue>({
     faculty: 'all',
     building: 'all',
@@ -179,7 +181,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
               <div className="relative group">
                 <select
                   value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value as 'all' | 'available' | 'in-use' | 'no-data' })}
+                  onChange={(e) => setFilters({ ...filters, status: e.target.value as 'all' | 'available' | 'in-use' | 'no-data' | 'favorites' })}
                   className="
                     w-full px-3 py-2
                     border-2 border-gray-200 rounded-lg
@@ -193,6 +195,9 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
                   <option value="available">🟢 空きのみ</option>
                   <option value="in-use">🔴 使用中のみ</option>
                   <option value="no-data">⚫ データなし</option>
+                  {isAuthenticated && (
+                    <option value="favorites">⭐ お気に入りのみ</option>
+                  )}
                 </select>
                 <ChevronDown className="
                   absolute right-3 top-1/2 transform -translate-y-1/2 

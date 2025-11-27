@@ -9,7 +9,7 @@ import logging
 from pathlib import Path
 
 from config import settings
-from api.routes import classrooms, occupancy, schedules, camera
+from api.routes import classrooms, occupancy, schedules, camera, auth, favorites, search_history
 from camera.processor import CameraProcessor
 from utils.db_init import init_database
 
@@ -68,6 +68,9 @@ app.include_router(classrooms.router, prefix=settings.api_v1_prefix)
 app.include_router(occupancy.router, prefix=settings.api_v1_prefix)
 app.include_router(schedules.router, prefix=settings.api_v1_prefix)
 app.include_router(camera.router, prefix=settings.api_v1_prefix)
+app.include_router(auth.router, prefix=settings.api_v1_prefix)
+app.include_router(favorites.router, prefix=settings.api_v1_prefix)
+app.include_router(search_history.router, prefix=settings.api_v1_prefix)
 
 # 静的ファイルのマウント（解析結果画像をブラウザで表示可能にする）
 # backendディレクトリを基準にstaticディレクトリを指定

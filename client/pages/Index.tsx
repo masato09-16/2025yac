@@ -5,6 +5,9 @@ import ClassroomCard from '@/components/ClassroomCard';
 import { FACULTY_NAMES, type Classroom as SharedClassroom, type Faculty } from '@shared/data';
 import { GraduationCap, TrendingUp, AlertCircle, Info } from 'lucide-react';
 import { getClassroomsWithStatus } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { saveSearchHistory } from '@/lib/searchHistory';
+import { getFavorites } from '@/lib/favorites';
 
 const PERIODS = [
   { id: '1', name: '1限', time: '8:50-10:20' },
@@ -26,6 +29,29 @@ export default function Index() {
   const [classrooms, setClassrooms] = useState<SharedClassroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+  // Fetch favorites when authenticated
+  const refreshFavorites = async () => {
+    if (!isAuthenticated) {
+      setFavoriteIds(new Set());
+      return;
+    }
+    
+    try {
+      const favorites = await getFavorites();
+      const ids = new Set(favorites.map(f => f.classroom_id));
+      setFavoriteIds(ids);
+    } catch (error) {
+      console.error('Failed to fetch favorites:', error);
+      setFavoriteIds(new Set());
+    }
+  };
+
+  useEffect(() => {
+    refreshFavorites();
+  }, [isAuthenticated]);
 
   // Fetch classrooms from API
   useEffect(() => {
@@ -49,6 +75,23 @@ export default function Index() {
         }
         
         const data = await getClassroomsWithStatus(params);
+        
+        // Save search history if authenticated
+        if (isAuthenticated) {
+          try {
+            await saveSearchHistory({
+              faculty: currentFilters.faculty !== 'all' ? currentFilters.faculty : null,
+              building_id: currentFilters.building !== 'all' ? currentFilters.building : null,
+              status: currentFilters.status !== 'all' ? currentFilters.status : null,
+              search_mode: currentFilters.searchMode,
+              target_date: currentFilters.targetDate || null,
+              target_period: currentFilters.searchMode === 'future' ? parseInt(currentFilters.period) : null,
+            });
+          } catch (error) {
+            console.error('Failed to save search history:', error);
+            // Don't fail the search if history save fails
+          }
+        }
         
         // Convert API data to frontend format
         const convertedClassrooms: SharedClassroom[] = data.map((item) => {
@@ -112,8 +155,13 @@ export default function Index() {
   const displayedClassrooms = useMemo(() => {
     let filtered = [...classrooms];
     
+    // Apply favorites filter first (if selected)
+    if (currentFilters.status === 'favorites') {
+      filtered = filtered.filter(classroom => favoriteIds.has(classroom.id));
+    }
+    
     // Apply status filter
-    if (currentFilters.status !== 'all') {
+    if (currentFilters.status !== 'all' && currentFilters.status !== 'favorites') {
       filtered = filtered.filter(classroom => {
         // Check if classroom has no data (no schedule and no occupancy)
         const hasNoData = !classroom.activeClass && !classroom.currentOccupancy;
@@ -131,7 +179,7 @@ export default function Index() {
     
     // Sort by room number for better organization
     return filtered.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
-  }, [classrooms, currentFilters.status]);
+  }, [classrooms, currentFilters.status, favoriteIds]);
 
   const availableCount = displayedClassrooms.filter(c => {
     const hasNoData = !c.activeClass && !c.currentOccupancy;
@@ -262,29 +310,29 @@ export default function Index() {
                 <div key={faculty} className="animate-fadeInUp">
                   {/* Faculty Header (視覚的階層: セクション区切り) */}
                   <div className="
-                    mb-3 sm:mb-4 lg:mb-5 
-                    flex items-center gap-2 sm:gap-3
-                    p-2.5 sm:p-3 bg-white rounded-xl shadow-md border-2 border-gray-100
+                    mb-2 sm:mb-3 lg:mb-4 
+                    flex items-center gap-2
+                    p-2 sm:p-2.5 bg-white rounded-lg shadow-sm border border-gray-200
                   ">
                     <div className="
                       flex items-center justify-center 
-                      w-8 h-8 sm:w-10 sm:h-10
+                      w-7 h-7 sm:w-8 sm:h-8
                       bg-gradient-to-br from-ynu-blue to-ynu-blue-dark 
-                      rounded-lg shadow-lg
+                      rounded shadow-md
                       flex-shrink-0
                     ">
-                      <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                      <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="
-                        text-base sm:text-lg lg:text-xl font-bold text-gray-900
+                        text-sm sm:text-base lg:text-lg font-bold text-gray-900
                         mb-0.5
                       ">
                         {facultyName?.full || faculty}
                       </h3>
-                      <div className="flex items-center gap-1.5">
-                        <TrendingUp className="w-3 h-3 text-green-600" />
-                        <p className="text-xs sm:text-sm text-gray-600 font-medium">
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="w-2.5 h-2.5 text-green-600" />
+                        <p className="text-[10px] sm:text-xs text-gray-600 font-medium">
                           {facultyAvailable} 件の教室が利用可能
                         </p>
                       </div>
@@ -293,17 +341,18 @@ export default function Index() {
                   
                   {/* Classroom Cards Grid 
                      モバイル: 2カラム（コンパクトに）
-                     タブレット: 3カラム
-                     デスクトップ: 5-6カラム（効率的な情報表示）
+                     タブレット: 3-4カラム
+                     デスクトップ: 6-7カラム（効率的な情報表示）
                   */}
                   <div className="
                     grid 
                     grid-cols-2 
                     sm:grid-cols-3 
-                    lg:grid-cols-4 
-                    xl:grid-cols-5 
-                    2xl:grid-cols-6
-                    gap-2 sm:gap-3 lg:gap-4
+                    md:grid-cols-4
+                    lg:grid-cols-5 
+                    xl:grid-cols-6 
+                    2xl:grid-cols-7
+                    gap-1.5 sm:gap-2 lg:gap-2.5
                   ">
                     {classrooms.map((classroom, index) => (
                       <div 
@@ -311,7 +360,10 @@ export default function Index() {
                         style={{ animationDelay: `${index * 50}ms` }}
                         className="animate-fadeInUp"
                       >
-                        <ClassroomCard classroom={classroom} />
+                        <ClassroomCard 
+                          classroom={classroom} 
+                          onFavoriteChange={refreshFavorites}
+                        />
                       </div>
                     ))}
                   </div>

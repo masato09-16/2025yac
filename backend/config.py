@@ -40,6 +40,11 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5174",
     ]
     
+    # Google OAuth Settings
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/api/v1/auth/callback"
+    
     class Config:
         env_file = ".env"
         case_sensitive = False

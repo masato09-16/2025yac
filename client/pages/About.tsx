@@ -42,7 +42,7 @@ export default function About() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
               <div className="flex flex-col items-center text-center p-4 bg-blue-50 rounded-lg">
                 <Building2 className="w-8 h-8 text-ynu-blue mb-2" />
-                <h3 className="font-bold text-sm text-gray-900 mb-1">97教室</h3>
+                <h3 className="font-bold text-sm text-gray-900 mb-1">92教室</h3>
                 <p className="text-xs text-gray-600">登録教室数</p>
               </div>
               <div className="flex flex-col items-center text-center p-4 bg-green-50 rounded-lg">

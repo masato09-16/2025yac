@@ -4,7 +4,7 @@ import SearchFilters, { SearchFiltersValue } from '@/components/SearchFilters';
 import ClassroomCard from '@/components/ClassroomCard';
 import { FACULTY_NAMES, type Classroom as SharedClassroom, type Faculty } from '@shared/data';
 import { GraduationCap, TrendingUp, AlertCircle, Info } from 'lucide-react';
-import { getClassroomsWithStatus } from '@/lib/api';
+import { getClassroomsWithStatus, getAllOccupancy } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { saveSearchHistory } from '@/lib/searchHistory';
 import { getFavorites } from '@/lib/favorites';
@@ -146,6 +146,57 @@ export default function Index() {
 
     fetchClassrooms();
   }, [currentFilters.faculty, currentFilters.building, currentFilters.searchMode, currentFilters.targetDate, currentFilters.period]);
+
+  // リアルタイム更新: 人数だけを更新（画面がちらつかないように）
+  useEffect(() => {
+    // 現在時刻モードの場合のみ、定期的に人数を更新
+    if (currentFilters.searchMode !== 'now') {
+      return;
+    }
+
+    // 人数だけを更新する関数
+    const updateOccupancyOnly = async () => {
+      try {
+        // フィルター条件に応じたパラメータを構築
+        const params: any = {};
+        if (currentFilters.faculty !== 'all') {
+          params.faculty = currentFilters.faculty;
+        }
+        if (currentFilters.building !== 'all') {
+          params.building_id = currentFilters.building;
+        }
+
+        // 人数情報だけを取得（軽量なAPI）
+        const occupancyData = await getAllOccupancy(params);
+
+        // 現在の教室データを更新（人数だけ）
+        setClassrooms(prevClassrooms => {
+          return prevClassrooms.map(classroom => {
+            const occupancy = occupancyData.find(occ => occ.classroom_id === classroom.id);
+            if (occupancy) {
+              return {
+                ...classroom,
+                currentOccupancy: occupancy.current_count,
+                lastUpdated: occupancy.last_updated,
+              };
+            }
+            return classroom;
+          });
+        });
+      } catch (err) {
+        // 人数更新が失敗しても、エラーを表示しない（静かに失敗）
+        console.error('Failed to update occupancy:', err);
+      }
+    };
+
+    // 5秒ごとに人数だけを更新
+    const intervalId = setInterval(updateOccupancyOnly, 5000);
+
+    // クリーンアップ
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [currentFilters.faculty, currentFilters.building, currentFilters.searchMode]);
 
   const handleSearch = (filters: SearchFiltersValue) => {
     setCurrentFilters(filters);

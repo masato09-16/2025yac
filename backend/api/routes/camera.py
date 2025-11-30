@@ -33,10 +33,10 @@ if not CAMERA_AVAILABLE:
     logger.warning("Camera dependencies (cv2, numpy, YOLODetector) not available. Camera routes will be disabled.")
 
 # グローバルなYOLO検出器インスタンス（初回使用時に初期化）
-_yolo_detector: Optional[YOLODetector] = None
+_yolo_detector = None
 
 
-def get_yolo_detector() -> YOLODetector:
+def get_yolo_detector():
     """YOLO検出器のシングルトンインスタンスを取得"""
     if not CAMERA_AVAILABLE:
         raise HTTPException(status_code=503, detail="Camera functionality is not available. Required dependencies (cv2, numpy, ultralytics) are not installed.")

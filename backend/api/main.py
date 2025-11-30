@@ -26,9 +26,17 @@ except (ImportError, Exception) as e:
     CameraProcessor = None
 
 # Try to import camera router separately
+camera_router = None
 try:
-    from api.routes import camera
-    camera_router = camera
+    # Import the camera module
+    import importlib
+    camera_module = importlib.import_module('api.routes.camera')
+    # Check if router exists and is valid
+    if hasattr(camera_module, 'router') and camera_module.router is not None:
+        camera_router = camera_module
+        logger.info("Camera router imported successfully")
+    else:
+        logger.warning("Camera router not found in camera module")
 except (ImportError, Exception) as e:
     # Catch all exceptions to prevent import errors from breaking the app
     logger.warning(f"Camera router not available. Error: {e}")
@@ -90,7 +98,7 @@ app.add_middleware(
 app.include_router(classrooms.router, prefix=settings.api_v1_prefix)
 app.include_router(occupancy.router, prefix=settings.api_v1_prefix)
 app.include_router(schedules.router, prefix=settings.api_v1_prefix)
-if camera_router:
+if camera_router and hasattr(camera_router, 'router') and camera_router.router is not None:
     app.include_router(camera_router.router, prefix=settings.api_v1_prefix)
 app.include_router(auth.router, prefix=settings.api_v1_prefix)
 app.include_router(favorites.router, prefix=settings.api_v1_prefix)

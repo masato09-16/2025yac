@@ -25,12 +25,15 @@ if ":5432/" in database_url:
     database_url = database_url.replace(":5432/", ":6543/")
     logger.info("Using Supabase connection pooler (port 6543) for serverless compatibility")
 
-# Add connection timeout for PostgreSQL
-connect_args["connect_timeout"] = 10
+# Add connection timeout for PostgreSQL (reduced for serverless)
+connect_args["connect_timeout"] = 5  # Reduced from 10 to 5 seconds
 
 # For serverless environments (Vercel), use smaller connection pool
 pool_size = 1
 max_overflow = 0
+
+# Add pool timeout to prevent hanging connections
+pool_timeout = 5  # Maximum time to wait for a connection from the pool
 
 logger.info(f"Creating database engine: {database_url[:50]}... (pool_size={pool_size}, max_overflow={max_overflow})")
 
@@ -41,6 +44,7 @@ try:
         pool_pre_ping=True,
         pool_size=pool_size,
         max_overflow=max_overflow,
+        pool_timeout=pool_timeout,
         connect_args=connect_args,
     )
     logger.info("Database engine created successfully")

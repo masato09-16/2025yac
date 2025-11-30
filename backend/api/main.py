@@ -21,8 +21,8 @@ _db_initializing = False
 def ensure_database_initialized():
     """Ensure database is initialized (lazy initialization for serverless)
     
-    This function checks if database tables exist and initializes them if needed.
-    It's designed to be fast and non-blocking for subsequent requests.
+    This function is designed to be fast and non-blocking.
+    It skips initialization if tables already exist (checked via a simple query).
     """
     global _db_initialized, _db_initializing
     
@@ -34,20 +34,24 @@ def ensure_database_initialized():
     if _db_initializing:
         return
     
-    # Quick check: if tables already exist, mark as initialized
+    # Quick check: try a simple query to see if tables exist
+    # This is faster than using inspect() which may establish a connection
     try:
-        from database.session import engine
+        from database.session import SessionLocal
         from database.models.classroom import Classroom
-        from sqlalchemy import inspect
         
-        inspector = inspect(engine)
-        tables = inspector.get_table_names()
-        
-        # Check if main tables exist
-        if 'classrooms' in tables and 'buildings' in tables:
+        db = SessionLocal()
+        try:
+            # Simple query to check if tables exist (with timeout)
+            count = db.query(Classroom).limit(1).count()
             logger.info("Database tables already exist, skipping initialization")
             _db_initialized = True
             return
+        except Exception as e:
+            # Tables don't exist or connection failed, continue with initialization
+            logger.debug(f"Tables check failed (this is OK if first run): {e}")
+        finally:
+            db.close()
     except Exception as e:
         logger.warning(f"Could not check database tables: {e}")
         # Continue with initialization
@@ -57,7 +61,7 @@ def ensure_database_initialized():
     try:
         logger.info("Starting database initialization...")
         # Only create tables, skip seeding on first request to avoid timeout
-        from database.session import Base
+        from database.session import Base, engine
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables created")
         _db_initialized = True
@@ -93,7 +97,13 @@ app.add_middleware(
 @app.middleware("http")
 async def init_db_middleware(request, call_next):
     """Middleware to ensure database is initialized (non-blocking)"""
+    # Skip initialization for health check and root endpoints to avoid timeout
+    if request.url.path in ["/", "/health", "/docs", "/openapi.json"]:
+        response = await call_next(request)
+        return response
+    
     # Call initialization (non-blocking if already in progress)
+    # This will be fast if tables already exist
     ensure_database_initialized()
     # Process request immediately, don't wait for initialization
     response = await call_next(request)

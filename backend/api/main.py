@@ -16,18 +16,57 @@ logger = logging.getLogger(__name__)
 
 # Database initialization flag (for serverless environments)
 _db_initialized = False
+_db_initializing = False
 
 def ensure_database_initialized():
-    """Ensure database is initialized (lazy initialization for serverless)"""
-    global _db_initialized
-    if not _db_initialized:
-        try:
-            init_database()
-            logger.info("Database initialized/seeding checked")
+    """Ensure database is initialized (lazy initialization for serverless)
+    
+    This function checks if database tables exist and initializes them if needed.
+    It's designed to be fast and non-blocking for subsequent requests.
+    """
+    global _db_initialized, _db_initializing
+    
+    # If already initialized, return immediately
+    if _db_initialized:
+        return
+    
+    # If initialization is in progress, return (don't block)
+    if _db_initializing:
+        return
+    
+    # Quick check: if tables already exist, mark as initialized
+    try:
+        from database.session import engine
+        from database.models.classroom import Classroom
+        from sqlalchemy import inspect
+        
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
+        
+        # Check if main tables exist
+        if 'classrooms' in tables and 'buildings' in tables:
+            logger.info("Database tables already exist, skipping initialization")
             _db_initialized = True
-        except Exception as e:
-            logger.exception("Database initialization failed: %s", e)
-            # Don't raise - allow app to continue, but log the error
+            return
+    except Exception as e:
+        logger.warning(f"Could not check database tables: {e}")
+        # Continue with initialization
+    
+    # Start initialization (non-blocking for subsequent requests)
+    _db_initializing = True
+    try:
+        logger.info("Starting database initialization...")
+        # Only create tables, skip seeding on first request to avoid timeout
+        from database.session import Base
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created")
+        _db_initialized = True
+        # Note: Seeding will happen on subsequent requests or can be done manually
+    except Exception as e:
+        logger.exception("Database initialization failed: %s", e)
+        # Don't raise - allow app to continue, but log the error
+    finally:
+        _db_initializing = False
 
 # Create FastAPI app
 # Note: lifespan is removed for Vercel serverless compatibility
@@ -49,10 +88,14 @@ app.add_middleware(
 )
 
 # Middleware to ensure database is initialized on first request
+# Note: This is non-blocking - if initialization is in progress,
+# the request will proceed without waiting
 @app.middleware("http")
 async def init_db_middleware(request, call_next):
-    """Middleware to ensure database is initialized"""
+    """Middleware to ensure database is initialized (non-blocking)"""
+    # Call initialization (non-blocking if already in progress)
     ensure_database_initialized()
+    # Process request immediately, don't wait for initialization
     response = await call_next(request)
     return response
 

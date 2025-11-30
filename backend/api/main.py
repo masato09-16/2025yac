@@ -14,47 +14,13 @@ from utils.db_init import init_database
 
 logger = logging.getLogger(__name__)
 
-# Optional camera imports (may fail if dependencies are not available)
-CameraProcessor = None
-camera_router = None
-try:
-    from camera.processor import CameraProcessor as _CameraProcessor
-    CameraProcessor = _CameraProcessor
-except (ImportError, Exception) as e:
-    # Catch all exceptions to prevent import errors from breaking the app
-    logger.warning(f"Camera processor not available. Error: {e}")
-    CameraProcessor = None
-
-# Try to import camera router separately
-# Skip camera router entirely in serverless environments to avoid Vercel handler issues
-camera_router = None
-if not settings.camera_enabled:
-    logger.info("Camera is disabled, skipping camera router import")
-else:
-    try:
-        # Import the camera module
-        import importlib
-        camera_module = importlib.import_module('api.routes.camera')
-        # Check if router exists and is valid
-        if hasattr(camera_module, 'router') and camera_module.router is not None:
-            camera_router = camera_module
-            logger.info("Camera router imported successfully")
-        else:
-            logger.warning("Camera router not found in camera module")
-    except (ImportError, Exception) as e:
-        # Catch all exceptions to prevent import errors from breaking the app
-        logger.warning(f"Camera router not available. Error: {e}")
-        camera_router = None
-
-# Global camera processor instance
-camera_processor = None
+# Camera functionality is completely disabled for Vercel deployment
+# All camera-related imports and code are skipped to avoid dependency issues
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager"""
-    global camera_processor
-    
     # Startup
     logger.info("Starting FastAPI application...")
     
@@ -65,19 +31,9 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.exception("Database initialization failed: %s", e)
     
-    if settings.camera_enabled and CameraProcessor is not None:
-        try:
-            camera_processor = CameraProcessor()
-            logger.info("Camera processor initialized")
-        except Exception as e:
-            logger.exception("Failed to initialize camera processor: %s", e)
-            camera_processor = None
-    
     yield
     
     # Shutdown
-    if camera_processor:
-        camera_processor.stop()
     logger.info("Shutting down FastAPI application...")
 
 
@@ -102,8 +58,7 @@ app.add_middleware(
 app.include_router(classrooms.router, prefix=settings.api_v1_prefix)
 app.include_router(occupancy.router, prefix=settings.api_v1_prefix)
 app.include_router(schedules.router, prefix=settings.api_v1_prefix)
-if camera_router and hasattr(camera_router, 'router') and camera_router.router is not None:
-    app.include_router(camera_router.router, prefix=settings.api_v1_prefix)
+# Camera router is disabled for Vercel deployment
 app.include_router(auth.router, prefix=settings.api_v1_prefix)
 app.include_router(favorites.router, prefix=settings.api_v1_prefix)
 app.include_router(search_history.router, prefix=settings.api_v1_prefix)

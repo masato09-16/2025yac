@@ -10,8 +10,14 @@ class Settings(BaseSettings):
     """Application settings"""
     
     # Database
+    # Default to SQLite for development, use Supabase PostgreSQL for production
+    # Supabase connection string format: postgresql://postgres:[PASSWORD]@[PROJECT_REF].supabase.co:5432/postgres
     database_url: str = "sqlite:///./ynu_classrooms.db"
     database_echo: bool = False
+    
+    # Polling interval for frontend (in milliseconds)
+    # Development: 5000ms (5 seconds), Production: 30000ms (30 seconds)
+    frontend_polling_interval: int = 5000
     
     # API Settings
     api_v1_prefix: str = "/api/v1"
@@ -28,6 +34,7 @@ class Settings(BaseSettings):
     redis_enabled: bool = False
     
     # CORS
+    # Can be overridden with ALLOWED_ORIGINS environment variable (comma-separated)
     allowed_origins: List[str] = [
         "http://localhost:8080",
         "http://localhost:3000",
@@ -48,6 +55,12 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Override allowed_origins from environment variable if provided
+        if os.getenv("ALLOWED_ORIGINS"):
+            self.allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS").split(",")]
 
 
 # Global settings instance

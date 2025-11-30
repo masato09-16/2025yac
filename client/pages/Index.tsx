@@ -189,8 +189,15 @@ export default function Index() {
       }
     };
 
-    // 5秒ごとに人数だけを更新
-    const intervalId = setInterval(updateOccupancyOnly, 5000);
+    // ポーリング間隔を環境変数から取得（デフォルト: 開発環境5秒、本番環境30秒）
+    // VITE_POLLING_INTERVAL はミリ秒単位（例: 5000 = 5秒、30000 = 30秒）
+    const pollingInterval = parseInt(
+      import.meta.env.VITE_POLLING_INTERVAL || 
+      (import.meta.env.PROD ? '30000' : '5000'),
+      10
+    );
+    
+    const intervalId = setInterval(updateOccupancyOnly, pollingInterval);
 
     // クリーンアップ
     return () => {

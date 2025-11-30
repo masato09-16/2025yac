@@ -5,8 +5,9 @@
 
 
 [functions]
-  external_node_modules = ["express"]
-  node_bundler = "esbuild"
+  # Python functions for FastAPI
+  api.py:
+    runtime = "python3.11"
   
 [[redirects]]
   force = true

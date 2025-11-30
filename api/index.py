@@ -10,45 +10,25 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Add backend directory to Python path
-# Try multiple possible paths for Vercel deployment
+# --- パス設定 ---
 current_file = Path(__file__).resolve()
 current_dir = current_file.parent
 root_dir = current_dir.parent
 
 # List all possible backend paths
 possible_backend_paths = [
-    root_dir / "backend",  # Standard structure: /api/index.py -> /backend
-    current_dir / "backend",  # If backend is in api/
-    Path("/var/task/backend"),  # Vercel function environment
-    Path("/var/task") / "backend",  # Alternative Vercel path
-    Path(os.getcwd()) / "backend",  # Current working directory
-    Path(os.getcwd()),  # If cwd is already backend
+    root_dir / "backend",
+    current_dir / "backend",
+    Path("/var/task/backend"),
+    Path("/var/task") / "backend",
+    Path(os.getcwd()) / "backend",
+    Path(os.getcwd()),
 ]
 
-logger.info(f"Current file: {current_file}")
-logger.info(f"Current directory: {current_dir}")
-logger.info(f"Root directory: {root_dir}")
-logger.info(f"Current working directory: {os.getcwd()}")
-logger.info(f"Initial Python path: {sys.path}")
-
-# List all files in current directory for debugging
-try:
-    logger.info(f"Files in current directory: {list(current_dir.iterdir())}")
-except Exception as e:
-    logger.warning(f"Could not list current directory: {e}")
-
-# List all files in root directory for debugging
-try:
-    logger.info(f"Files in root directory: {list(root_dir.iterdir())}")
-except Exception as e:
-    logger.warning(f"Could not list root directory: {e}")
-
+# Backendディレクトリを探索して sys.path に追加
 backend_dir = None
 for path in possible_backend_paths:
-    logger.info(f"Checking path: {path} (exists: {path.exists()})")
     if path.exists():
-        # Check if it's a directory and has api subdirectory
         if path.is_dir():
             api_subdir = path / "api"
             if api_subdir.exists():
@@ -56,7 +36,6 @@ for path in possible_backend_paths:
                 logger.info(f"Found backend directory: {backend_dir}")
                 break
             else:
-                # Maybe the path itself is the backend (if we're already in backend)
                 if (path / "config.py").exists() or (path / "api").exists():
                     backend_dir = path
                     logger.info(f"Found backend directory (by config.py): {backend_dir}")
@@ -64,76 +43,37 @@ for path in possible_backend_paths:
 
 if backend_dir:
     sys.path.insert(0, str(backend_dir))
-    os.chdir(str(backend_dir))  # Change working directory to backend
+    os.chdir(str(backend_dir))
     logger.info(f"Added {backend_dir} to Python path and changed working directory to {backend_dir}")
-    logger.info(f"Updated Python path: {sys.path}")
 else:
-    # Fallback: try to find backend in current path
-    cwd = os.getcwd()
-    logger.warning(f"Backend directory not found in standard locations. Current directory: {cwd}")
-    
-    # Try adding root directory
     sys.path.insert(0, str(root_dir))
-    logger.info(f"Added root directory to Python path: {root_dir}")
-    
-    # Also try current directory if it contains backend files
     if (current_dir / "config.py").exists() or (current_dir / "api").exists():
         sys.path.insert(0, str(current_dir))
-        logger.info(f"Added current directory to Python path: {current_dir}")
-    
-    logger.info(f"Final Python path: {sys.path}")
+    logger.info(f"Added root directory to Python path: {root_dir}")
 
-try:
-    logger.info("Attempting to import mangum...")
-    from mangum import Mangum
-    logger.info("Successfully imported Mangum")
-except ImportError as e:
-    logger.error(f"Failed to import Mangum: {e}")
-    logger.error("Make sure mangum is in api/requirements.txt")
-    raise
-
-try:
-    logger.info("Importing FastAPI for type checking...")
-    from fastapi import FastAPI
-    logger.info("FastAPI imported successfully")
-except ImportError as e:
-    logger.warning(f"Could not import FastAPI for type checking: {e}")
-    FastAPI = None  # Fallback if FastAPI is not available
-
-# Check environment variables
+# --- 環境変数の確認 (デバッグ用) ---
 logger.info("Checking environment variables...")
 database_url = os.getenv("DATABASE_URL", "NOT SET")
 if database_url != "NOT SET":
-    # Mask password in log
     if "@" in database_url:
         masked_url = database_url.split("@")[0].split("://")[0] + "://***@" + "@".join(database_url.split("@")[1:])
         logger.info(f"DATABASE_URL is set: {masked_url}")
     else:
         logger.info(f"DATABASE_URL is set: {database_url[:50]}...")
 else:
-    logger.warning("DATABASE_URL is not set! This will cause database connection errors.")
-    
+    logger.warning("DATABASE_URL is not set!")
+
 logger.info(f"DEBUG: {os.getenv('DEBUG', 'NOT SET')}")
 logger.info(f"CAMERA_ENABLED: {os.getenv('CAMERA_ENABLED', 'NOT SET')}")
 
+# --- 【重要】FastAPIのappを直接インポート ---
+# Mangumは使用せず、FastAPIのインスタンス 'app' をそのままimportします
+# Vercelはこの 'app' 変数を自動的に検出し、ASGIアプリとして起動します
 try:
     logger.info("Attempting to import api.main...")
-    # Import app module first to catch any import errors
-    import api.main
-    logger.info("Successfully imported api.main module")
-    
-    # Verify app exists and is a FastAPI instance
-    if not hasattr(api.main, 'app'):
-        raise AttributeError("api.main module does not have 'app' attribute")
-    
-    app = api.main.app
-    logger.info(f"Successfully imported FastAPI app: {type(app)}")
-    
-    # Verify app is a FastAPI instance (if FastAPI is available for type checking)
-    if FastAPI is not None and not isinstance(app, FastAPI):
-        raise TypeError(f"app is not a FastAPI instance: {type(app)}")
-    
-    logger.info("FastAPI app validation passed")
+    from api.main import app
+    logger.info("Successfully imported FastAPI app")
+    logger.info(f"FastAPI app type: {type(app)}")
 except ImportError as e:
     logger.error(f"Failed to import api.main: {e}")
     logger.error(f"Current Python path: {sys.path}")
@@ -151,28 +91,9 @@ except Exception as e:
     logger.error(f"Unexpected error importing api.main: {e}", exc_info=True)
     raise
 
-try:
-    logger.info("Creating Mangum handler...")
-    # Create Mangum handler for Vercel Functions
-    # Note: lifespan is disabled in FastAPI app for serverless compatibility
-    # Database initialization happens on first request via middleware
-    mangum_handler = Mangum(app, lifespan="off")
-    logger.info("Mangum handler created successfully")
-    logger.info(f"Mangum handler type: {type(mangum_handler)}")
-    
-    # Verify handler is callable
-    if not callable(mangum_handler):
-        raise TypeError(f"Handler is not callable: {type(mangum_handler)}")
-        
-except Exception as e:
-    logger.error(f"Failed to create Mangum handler: {e}", exc_info=True)
-    raise
+# 以下の行は絶対に削除してください
+# handler = Mangum(app) 
+# handler 変数を定義しない: これが存在すると、Vercelは古い動作モード（HTTPハンドラモード）に入ってしまい、エラーになります。
 
-# Export Mangum handler directly for Vercel
-# Vercel Python functions expect a 'handler' variable that is callable
-# Mangum instances are callable and work directly with Vercel
-handler = mangum_handler
-
-# Export handler for Vercel
-__all__ = ["handler"]
-
+# app 変数を公開する: from api.main import app とすることで、ファイル内に app 変数が存在することになり、
+# Vercelがこれを検出してFastAPIを起動してくれます。

@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=False,
-        extra="ignore",  # Ignore extra environment variables (e.g., vite_public_builder_key, ping_message)
+        extra="allow",  # Allow extra environment variables to be ignored (e.g., vite_public_builder_key, ping_message)
     )
     
     def __init__(self, **kwargs):

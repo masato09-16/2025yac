@@ -26,21 +26,25 @@ except (ImportError, Exception) as e:
     CameraProcessor = None
 
 # Try to import camera router separately
+# Skip camera router entirely in serverless environments to avoid Vercel handler issues
 camera_router = None
-try:
-    # Import the camera module
-    import importlib
-    camera_module = importlib.import_module('api.routes.camera')
-    # Check if router exists and is valid
-    if hasattr(camera_module, 'router') and camera_module.router is not None:
-        camera_router = camera_module
-        logger.info("Camera router imported successfully")
-    else:
-        logger.warning("Camera router not found in camera module")
-except (ImportError, Exception) as e:
-    # Catch all exceptions to prevent import errors from breaking the app
-    logger.warning(f"Camera router not available. Error: {e}")
-    camera_router = None
+if not settings.camera_enabled:
+    logger.info("Camera is disabled, skipping camera router import")
+else:
+    try:
+        # Import the camera module
+        import importlib
+        camera_module = importlib.import_module('api.routes.camera')
+        # Check if router exists and is valid
+        if hasattr(camera_module, 'router') and camera_module.router is not None:
+            camera_router = camera_module
+            logger.info("Camera router imported successfully")
+        else:
+            logger.warning("Camera router not found in camera module")
+    except (ImportError, Exception) as e:
+        # Catch all exceptions to prevent import errors from breaking the app
+        logger.warning(f"Camera router not available. Error: {e}")
+        camera_router = None
 
 # Global camera processor instance
 camera_processor = None

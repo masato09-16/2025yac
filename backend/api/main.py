@@ -9,14 +9,24 @@ import logging
 from pathlib import Path
 
 from config import settings
-from api.routes import classrooms, occupancy, schedules, camera, auth, favorites, search_history
-from camera.processor import CameraProcessor
+from api.routes import classrooms, occupancy, schedules, auth, favorites, search_history
 from utils.db_init import init_database
 
 logger = logging.getLogger(__name__)
 
+# Optional camera imports (may fail if dependencies are not available)
+CameraProcessor = None
+camera_router = None
+try:
+    from camera.processor import CameraProcessor as _CameraProcessor
+    from api.routes import camera
+    CameraProcessor = _CameraProcessor
+    camera_router = camera
+except ImportError:
+    logger.warning("Camera dependencies not available. Camera features will be disabled.")
+
 # Global camera processor instance
-camera_processor: CameraProcessor | None = None
+camera_processor = None
 
 
 @asynccontextmanager
@@ -34,9 +44,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.exception("Database initialization failed: %s", e)
     
-    if settings.camera_enabled:
-        camera_processor = CameraProcessor()
-        logger.info("Camera processor initialized")
+    if settings.camera_enabled and CameraProcessor is not None:
+        try:
+            camera_processor = CameraProcessor()
+            logger.info("Camera processor initialized")
+        except Exception as e:
+            logger.exception("Failed to initialize camera processor: %s", e)
+            camera_processor = None
     
     yield
     
@@ -67,7 +81,8 @@ app.add_middleware(
 app.include_router(classrooms.router, prefix=settings.api_v1_prefix)
 app.include_router(occupancy.router, prefix=settings.api_v1_prefix)
 app.include_router(schedules.router, prefix=settings.api_v1_prefix)
-app.include_router(camera.router, prefix=settings.api_v1_prefix)
+if camera_router:
+    app.include_router(camera_router.router, prefix=settings.api_v1_prefix)
 app.include_router(auth.router, prefix=settings.api_v1_prefix)
 app.include_router(favorites.router, prefix=settings.api_v1_prefix)
 app.include_router(search_history.router, prefix=settings.api_v1_prefix)

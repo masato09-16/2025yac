@@ -156,19 +156,32 @@ try:
     # Create Mangum handler for Vercel Functions
     # Note: lifespan is disabled in FastAPI app for serverless compatibility
     # Database initialization happens on first request via middleware
-    handler = Mangum(app, lifespan="off")
+    mangum_handler = Mangum(app, lifespan="off")
     logger.info("Mangum handler created successfully")
+    logger.info(f"Mangum handler type: {type(mangum_handler)}")
     
     # Verify handler is callable
-    if not callable(handler):
-        raise TypeError(f"Handler is not callable: {type(handler)}")
-    logger.info(f"Handler type: {type(handler)}")
+    if not callable(mangum_handler):
+        raise TypeError(f"Handler is not callable: {type(mangum_handler)}")
         
 except Exception as e:
     logger.error(f"Failed to create Mangum handler: {e}", exc_info=True)
     raise
 
+# Wrap Mangum handler in a function for Vercel compatibility
+# Vercel expects a function, not a class instance
+def handler(event, context):
+    """
+    Vercel Python function handler
+    Wraps Mangum handler to ensure compatibility with Vercel's function format
+    """
+    try:
+        return mangum_handler(event, context)
+    except Exception as e:
+        logger.error(f"Handler error: {e}", exc_info=True)
+        raise
+
 # Export handler for Vercel
-# Vercel expects a 'handler' variable or function
+# Vercel expects a 'handler' function
 __all__ = ["handler"]
 

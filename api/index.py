@@ -92,6 +92,22 @@ except ImportError as e:
     logger.error("Make sure mangum is in api/requirements.txt")
     raise
 
+# Check environment variables
+logger.info("Checking environment variables...")
+database_url = os.getenv("DATABASE_URL", "NOT SET")
+if database_url != "NOT SET":
+    # Mask password in log
+    if "@" in database_url:
+        masked_url = database_url.split("@")[0].split("://")[0] + "://***@" + "@".join(database_url.split("@")[1:])
+        logger.info(f"DATABASE_URL is set: {masked_url}")
+    else:
+        logger.info(f"DATABASE_URL is set: {database_url[:50]}...")
+else:
+    logger.warning("DATABASE_URL is not set! This will cause database connection errors.")
+    
+logger.info(f"DEBUG: {os.getenv('DEBUG', 'NOT SET')}")
+logger.info(f"CAMERA_ENABLED: {os.getenv('CAMERA_ENABLED', 'NOT SET')}")
+
 try:
     logger.info("Attempting to import api.main...")
     from api.main import app
@@ -115,6 +131,17 @@ try:
     # Create Mangum handler for Vercel Functions
     handler = Mangum(app, lifespan="off")
     logger.info("Mangum handler created successfully")
+    
+    # Test database connection
+    try:
+        logger.info("Testing database connection...")
+        from database.session import engine
+        with engine.connect() as conn:
+            logger.info("Database connection test successful")
+    except Exception as db_error:
+        logger.error(f"Database connection test failed: {db_error}", exc_info=True)
+        # Don't raise here - let the app start and fail on first request if needed
+        
 except Exception as e:
     logger.error(f"Failed to create Mangum handler: {e}", exc_info=True)
     raise

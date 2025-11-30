@@ -10,8 +10,7 @@
   "functions": {
     "api/index.py": {
       "includeFiles": "backend/**",
-      "maxDuration": 30,
-      "handler": "handler"
+      "maxDuration": 30
     }
   }
 }

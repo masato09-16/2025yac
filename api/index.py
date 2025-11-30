@@ -168,20 +168,11 @@ except Exception as e:
     logger.error(f"Failed to create Mangum handler: {e}", exc_info=True)
     raise
 
-# Wrap Mangum handler in a function for Vercel compatibility
-# Vercel expects a function, not a class instance
-def handler(event, context):
-    """
-    Vercel Python function handler
-    Wraps Mangum handler to ensure compatibility with Vercel's function format
-    """
-    try:
-        return mangum_handler(event, context)
-    except Exception as e:
-        logger.error(f"Handler error: {e}", exc_info=True)
-        raise
+# Export Mangum handler directly for Vercel
+# Vercel Python functions expect a 'handler' variable that is callable
+# Mangum instances are callable and work directly with Vercel
+handler = mangum_handler
 
 # Export handler for Vercel
-# Vercel expects a 'handler' function
 __all__ = ["handler"]
 

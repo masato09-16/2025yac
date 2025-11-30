@@ -4,20 +4,33 @@ Camera detection API routes
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from typing import Optional
-import cv2
-import numpy as np
 from pathlib import Path
 import logging
+
+# Try to import camera dependencies
+try:
+    import cv2
+    import numpy as np
+    from camera.detector import YOLODetector
+    CAMERA_AVAILABLE = True
+except ImportError:
+    CAMERA_AVAILABLE = False
+    cv2 = None
+    np = None
+    YOLODetector = None
 
 from database.session import get_db
 from database.models.occupancy import Occupancy as DBOccupancy, OccupancyHistory
 from database.models.classroom import Classroom
-from camera.detector import YOLODetector
 from config import settings
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/camera", tags=["camera"])
+
+# If camera dependencies are not available, create a stub router
+if not CAMERA_AVAILABLE:
+    logger.warning("Camera dependencies (cv2, numpy, YOLODetector) not available. Camera routes will be disabled.")
 
 # グローバルなYOLO検出器インスタンス（初回使用時に初期化）
 _yolo_detector: Optional[YOLODetector] = None
@@ -25,6 +38,8 @@ _yolo_detector: Optional[YOLODetector] = None
 
 def get_yolo_detector() -> YOLODetector:
     """YOLO検出器のシングルトンインスタンスを取得"""
+    if not CAMERA_AVAILABLE:
+        raise HTTPException(status_code=503, detail="Camera functionality is not available. Required dependencies (cv2, numpy, ultralytics) are not installed.")
     global _yolo_detector
     if _yolo_detector is None:
         model_path = settings.detection_model_path if hasattr(settings, 'detection_model_path') else "yolov8n.pt"
@@ -47,6 +62,12 @@ async def detect_people(
     - 解析結果画像（バウンディングボックス付き）を保存
     - データベースのOccupancyテーブルを更新
     """
+    if not CAMERA_AVAILABLE:
+        raise HTTPException(
+            status_code=503, 
+            detail="Camera functionality is not available. Required dependencies (cv2, numpy, ultralytics) are not installed."
+        )
+    
     try:
         # 教室の存在確認
         classroom = db.query(Classroom).filter(Classroom.id == classroom_id).first()

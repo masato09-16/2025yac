@@ -9,10 +9,7 @@
   ],
   "functions": {
     "api/index.py": {
-      "includeFiles": [
-        "backend/**",
-        "backend/**/*"
-      ],
+      "includeFiles": "backend/**",
       "maxDuration": 30
     }
   }

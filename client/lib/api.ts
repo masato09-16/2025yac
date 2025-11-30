@@ -2,7 +2,10 @@
  * API client for FastAPI backend
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// In Vercel/production, use relative paths (same domain)
+// In development, use localhost:8000
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD ? '' : 'http://localhost:8000');
 
 /**
  * Generic fetch wrapper with error handling

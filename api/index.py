@@ -66,16 +66,30 @@ else:
 logger.info(f"DEBUG: {os.getenv('DEBUG', 'NOT SET')}")
 logger.info(f"CAMERA_ENABLED: {os.getenv('CAMERA_ENABLED', 'NOT SET')}")
 
-# --- 【重要】FastAPIのappを直接インポート ---
-# Mangumは使用せず、FastAPIのインスタンス 'app' をそのままimportします
-# Vercelはこの 'app' 変数を自動的に検出し、ASGIアプリとして起動します
+# --- 【重要】FastAPIのappをインポートしてMangumでラップ ---
+# VercelのPythonランタイムはASGIアプリを直接サポートしていないため、
+# Mangumを使用してAWS Lambda形式のハンドラに変換します
 try:
     logger.info("Attempting to import api.main...")
-    # Import app directly - Vercel will detect and start it
     from api.main import app
     logger.info("Successfully imported FastAPI app")
     logger.info(f"FastAPI app type: {type(app)}")
-    logger.info("App ready for Vercel to start")
+    
+    # Mangumを使用してASGIアプリをLambdaハンドラに変換
+    try:
+        from mangum import Mangum
+        logger.info("Importing Mangum...")
+        handler = Mangum(app, lifespan="off")
+        logger.info("Mangum handler created successfully")
+        logger.info("App ready for Vercel to start")
+    except ImportError as e:
+        logger.error(f"Failed to import Mangum: {e}")
+        logger.error("Mangum is required for Vercel deployment. Please ensure it's in api/requirements.txt")
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create Mangum handler: {e}", exc_info=True)
+        raise
+        
 except ImportError as e:
     logger.error(f"Failed to import api.main: {e}")
     logger.error(f"Current Python path: {sys.path}")
@@ -93,11 +107,6 @@ except Exception as e:
     logger.error(f"Unexpected error importing api.main: {e}", exc_info=True)
     raise
 
-# Ensure app is available at module level for Vercel
-# Vercel looks for 'app' variable in the module
-__all__ = ["app"]
-
-# Export app for Vercel
-# Vercel automatically detects the 'app' variable and starts it as an ASGI application
-# DO NOT define a 'handler' variable - this causes Vercel to use the old HTTP handler mode
-__all__ = ["app"]
+# Export handler for Vercel
+# Vercel looks for 'handler' variable in the module for Python functions
+__all__ = ["handler"]

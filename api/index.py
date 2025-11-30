@@ -129,18 +129,9 @@ except ImportError as e:
 try:
     logger.info("Creating Mangum handler...")
     # Create Mangum handler for Vercel Functions
+    # Note: Don't test database connection here - it will be tested on first request
     handler = Mangum(app, lifespan="off")
     logger.info("Mangum handler created successfully")
-    
-    # Test database connection
-    try:
-        logger.info("Testing database connection...")
-        from database.session import engine
-        with engine.connect() as conn:
-            logger.info("Database connection test successful")
-    except Exception as db_error:
-        logger.error(f"Database connection test failed: {db_error}", exc_info=True)
-        # Don't raise here - let the app start and fail on first request if needed
         
 except Exception as e:
     logger.error(f"Failed to create Mangum handler: {e}", exc_info=True)

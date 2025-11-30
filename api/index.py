@@ -71,9 +71,11 @@ logger.info(f"CAMERA_ENABLED: {os.getenv('CAMERA_ENABLED', 'NOT SET')}")
 # Vercelはこの 'app' 変数を自動的に検出し、ASGIアプリとして起動します
 try:
     logger.info("Attempting to import api.main...")
+    # Import app directly - Vercel will detect and start it
     from api.main import app
     logger.info("Successfully imported FastAPI app")
     logger.info(f"FastAPI app type: {type(app)}")
+    logger.info("App ready for Vercel to start")
 except ImportError as e:
     logger.error(f"Failed to import api.main: {e}")
     logger.error(f"Current Python path: {sys.path}")
@@ -91,9 +93,11 @@ except Exception as e:
     logger.error(f"Unexpected error importing api.main: {e}", exc_info=True)
     raise
 
-# 以下の行は絶対に削除してください
-# handler = Mangum(app) 
-# handler 変数を定義しない: これが存在すると、Vercelは古い動作モード（HTTPハンドラモード）に入ってしまい、エラーになります。
+# Ensure app is available at module level for Vercel
+# Vercel looks for 'app' variable in the module
+__all__ = ["app"]
 
-# app 変数を公開する: from api.main import app とすることで、ファイル内に app 変数が存在することになり、
-# Vercelがこれを検出してFastAPIを起動してくれます。
+# Export app for Vercel
+# Vercel automatically detects the 'app' variable and starts it as an ASGI application
+# DO NOT define a 'handler' variable - this causes Vercel to use the old HTTP handler mode
+__all__ = ["app"]

@@ -129,8 +129,9 @@ except ImportError as e:
 try:
     logger.info("Creating Mangum handler...")
     # Create Mangum handler for Vercel Functions
-    # Note: Don't test database connection here - it will be tested on first request
-    handler = Mangum(app, lifespan="off")
+    # Note: lifespan is disabled in FastAPI app for serverless compatibility
+    # Database initialization happens on first request via middleware
+    handler = Mangum(app)
     logger.info("Mangum handler created successfully")
         
 except Exception as e:

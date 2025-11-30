@@ -4,7 +4,6 @@ FastAPI main application
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from contextlib import asynccontextmanager
 import logging
 from pathlib import Path
 
@@ -17,32 +16,27 @@ logger = logging.getLogger(__name__)
 # Camera functionality is completely disabled for Vercel deployment
 # All camera-related imports and code are skipped to avoid dependency issues
 
+# Database initialization flag (for serverless environments)
+_db_initialized = False
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan manager"""
-    # Startup
-    logger.info("Starting FastAPI application...")
-    
-    # Ensure database schema and seed data exist
-    try:
-        init_database()
-        logger.info("Database initialized/seeding checked")
-    except Exception as e:
-        logger.exception("Database initialization failed: %s", e)
-    
-    yield
-    
-    # Shutdown
-    logger.info("Shutting down FastAPI application...")
-
+def ensure_database_initialized():
+    """Ensure database is initialized (lazy initialization for serverless)"""
+    global _db_initialized
+    if not _db_initialized:
+        try:
+            init_database()
+            logger.info("Database initialized/seeding checked")
+            _db_initialized = True
+        except Exception as e:
+            logger.exception("Database initialization failed: %s", e)
+            # Don't raise - allow app to continue, but log the error
 
 # Create FastAPI app
+# Note: lifespan is removed for Vercel serverless compatibility
 app = FastAPI(
     title="YNU Classroom Occupancy API",
     description="Real-time classroom occupancy monitoring system for Yokohama National University",
     version="1.0.0",
-    lifespan=lifespan,
 )
 
 # CORS middleware
@@ -53,6 +47,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Middleware to ensure database is initialized on first request
+@app.middleware("http")
+async def init_db_middleware(request, call_next):
+    """Middleware to ensure database is initialized"""
+    ensure_database_initialized()
+    response = await call_next(request)
+    return response
 
 # Include routers
 app.include_router(classrooms.router, prefix=settings.api_v1_prefix)

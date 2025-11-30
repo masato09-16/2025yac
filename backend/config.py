@@ -10,47 +10,40 @@ class Settings(BaseSettings):
     """Application settings"""
     
     # Database
-    # Default to SQLite for development, use Supabase PostgreSQL for production
-    # Supabase connection string format: postgresql://postgres:[PASSWORD]@[PROJECT_REF].supabase.co:5432/postgres
-    database_url: str = "sqlite:///./ynu_classrooms.db"
+    # Vercel deployment uses Supabase PostgreSQL (required)
+    # Supabase connection string format: postgresql://postgres:[PASSWORD]@[PROJECT_REF].supabase.co:6543/postgres
+    # Note: Use port 6543 (connection pooler) for serverless compatibility
+    database_url: str = ""  # Required: Set via DATABASE_URL environment variable
     database_echo: bool = False
     
     # Polling interval for frontend (in milliseconds)
-    # Development: 5000ms (5 seconds), Production: 30000ms (30 seconds)
-    frontend_polling_interval: int = 5000
+    # Production: 30000ms (30 seconds)
+    frontend_polling_interval: int = 30000
     
     # API Settings
     api_v1_prefix: str = "/api/v1"
-    debug: bool = True
-    secret_key: str = "your-secret-key-change-in-production"
+    debug: bool = False  # Production default
+    secret_key: str = ""  # Required: Set via SECRET_KEY environment variable
     
     # Camera Settings
-    camera_enabled: bool = True
+    camera_enabled: bool = False  # Disabled for Vercel (dependencies too large)
     camera_update_interval: int = 5  # seconds
     detection_model_path: str = "models/yolov8n.pt"
     
     # Redis (optional)
-    redis_url: str = "redis://localhost:6379/0"
+    redis_url: str = ""
     redis_enabled: bool = False
     
     # CORS
-    # Can be overridden with ALLOWED_ORIGINS environment variable (comma-separated)
-    allowed_origins: List[str] = [
-        "http://localhost:8080",
-        "http://localhost:3000",
-        "http://127.0.0.1:8080",
-        "http://127.0.0.1:3000",
-        # Vite default dev ports
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-    ]
+    # Set via ALLOWED_ORIGINS environment variable (comma-separated)
+    # Example: https://your-app.vercel.app,https://your-custom-domain.com
+    # If not set, defaults to empty list (CORS will need to be configured)
+    allowed_origins: List[str] = []
     
     # Google OAuth Settings
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_redirect_uri: str = "http://localhost:8000/api/v1/auth/callback"
+    google_redirect_uri: str = ""  # Set via GOOGLE_REDIRECT_URI environment variable
     
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -63,6 +56,10 @@ class Settings(BaseSettings):
         # Override allowed_origins from environment variable if provided
         if os.getenv("ALLOWED_ORIGINS"):
             self.allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS").split(",")]
+        # If still empty and in production, add common Vercel patterns
+        if not self.allowed_origins and not self.debug:
+            # Allow requests from same origin (Vercel serves both frontend and API)
+            self.allowed_origins = ["*"]  # Allow all origins in production (can be restricted via env var)
 
 
 # Global settings instance

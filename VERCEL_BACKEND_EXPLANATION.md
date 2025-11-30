@@ -2,7 +2,9 @@
 
 ## 📋 概要
 
-このプロジェクトでは、Vercelのサーバーレス関数（Python Functions）を使用してバックエンドAPIを提供しています。
+このプロジェクトは**Vercel専用**に最適化されています。Vercelのサーバーレス関数（Python Functions）を使用してバックエンドAPIを提供しています。
+
+**注意**: ローカル環境での動作は想定していません。すべての設定はVercelのサーバーレス環境を前提としています。
 
 ## 🔄 動作の流れ
 
@@ -79,14 +81,26 @@ Supabase PostgreSQL (データベース)
 
 ## 🔧 環境変数の設定
 
-Vercelダッシュボードで以下の環境変数を設定：
+**重要**: 環境変数の詳細な設定方法は `VERCEL_ENV_SETUP.md` を参照してください。
+
+Vercelダッシュボードで以下の**必須**環境変数を設定：
 
 ```env
 DATABASE_URL=postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
-DEBUG=False
-SECRET_KEY=強力なランダムキー
-CAMERA_ENABLED=False
+SECRET_KEY=強力なランダムキー（32文字以上）
 ```
+
+**推奨**環境変数：
+
+```env
+DEBUG=False
+CAMERA_ENABLED=False
+ALLOWED_ORIGINS=https://your-app.vercel.app
+```
+
+**注意**: 
+- `DATABASE_URL`は**ポート6543**（接続プーラー）を使用してください
+- 直接接続（port 5432）はサーバーレス環境では動作しません
 
 ## 🚀 デプロイの流れ
 
@@ -108,10 +122,13 @@ CAMERA_ENABLED=False
 
 ## ⚠️ 注意事項
 
-1. **カメラ機能**: Vercel環境では無効化されています（依存関係が大きすぎるため）
-2. **データベース**: Supabaseの接続プーラー（port 6543）を使用する必要があります
-3. **コールドスタート**: 初回リクエストは数秒かかる場合があります
-4. **タイムアウト**: デフォルトで30秒に設定されています
+1. **Vercel専用**: このプロジェクトはVercelのサーバーレス環境専用です。ローカル環境での動作は想定していません。
+2. **SQLite非対応**: SQLiteは使用できません。PostgreSQL（Supabase）が必須です。
+3. **カメラ機能**: Vercel環境では無効化されています（依存関係が大きすぎるため）
+4. **データベース**: Supabaseの接続プーラー（port 6543）を使用する必要があります
+5. **コールドスタート**: 初回リクエストは数秒かかる場合があります
+6. **タイムアウト**: デフォルトで30秒に設定されています
+7. **環境変数**: `DATABASE_URL`と`SECRET_KEY`は必須です。設定方法は`VERCEL_ENV_SETUP.md`を参照してください。
 
 ## 🐛 トラブルシューティング
 

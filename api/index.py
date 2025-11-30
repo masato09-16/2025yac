@@ -92,6 +92,14 @@ except ImportError as e:
     logger.error("Make sure mangum is in api/requirements.txt")
     raise
 
+try:
+    logger.info("Importing FastAPI for type checking...")
+    from fastapi import FastAPI
+    logger.info("FastAPI imported successfully")
+except ImportError as e:
+    logger.warning(f"Could not import FastAPI for type checking: {e}")
+    FastAPI = None  # Fallback if FastAPI is not available
+
 # Check environment variables
 logger.info("Checking environment variables...")
 database_url = os.getenv("DATABASE_URL", "NOT SET")
@@ -110,8 +118,22 @@ logger.info(f"CAMERA_ENABLED: {os.getenv('CAMERA_ENABLED', 'NOT SET')}")
 
 try:
     logger.info("Attempting to import api.main...")
-    from api.main import app
-    logger.info("Successfully imported FastAPI app")
+    # Import app module first to catch any import errors
+    import api.main
+    logger.info("Successfully imported api.main module")
+    
+    # Verify app exists and is a FastAPI instance
+    if not hasattr(api.main, 'app'):
+        raise AttributeError("api.main module does not have 'app' attribute")
+    
+    app = api.main.app
+    logger.info(f"Successfully imported FastAPI app: {type(app)}")
+    
+    # Verify app is a FastAPI instance (if FastAPI is available for type checking)
+    if FastAPI is not None and not isinstance(app, FastAPI):
+        raise TypeError(f"app is not a FastAPI instance: {type(app)}")
+    
+    logger.info("FastAPI app validation passed")
 except ImportError as e:
     logger.error(f"Failed to import api.main: {e}")
     logger.error(f"Current Python path: {sys.path}")
@@ -125,16 +147,28 @@ except ImportError as e:
         logger.error(f"Could not find api module: {e2}")
     
     raise
+except Exception as e:
+    logger.error(f"Unexpected error importing api.main: {e}", exc_info=True)
+    raise
 
 try:
     logger.info("Creating Mangum handler...")
     # Create Mangum handler for Vercel Functions
     # Note: lifespan is disabled in FastAPI app for serverless compatibility
     # Database initialization happens on first request via middleware
-    handler = Mangum(app)
+    handler = Mangum(app, lifespan="off")
     logger.info("Mangum handler created successfully")
+    
+    # Verify handler is callable
+    if not callable(handler):
+        raise TypeError(f"Handler is not callable: {type(handler)}")
+    logger.info(f"Handler type: {type(handler)}")
         
 except Exception as e:
     logger.error(f"Failed to create Mangum handler: {e}", exc_info=True)
     raise
+
+# Export handler for Vercel
+# Vercel expects a 'handler' variable or function
+__all__ = ["handler"]
 

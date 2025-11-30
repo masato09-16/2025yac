@@ -1,7 +1,7 @@
 """
 Configuration settings for the FastAPI application
 """
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
 import os
 
@@ -52,9 +52,11 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/v1/auth/callback"
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore",  # Ignore extra environment variables (e.g., vite_public_builder_key, ping_message)
+    )
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

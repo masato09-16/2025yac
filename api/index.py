@@ -13,52 +13,109 @@ logger = logging.getLogger(__name__)
 # Add backend directory to Python path
 # Try multiple possible paths for Vercel deployment
 current_file = Path(__file__).resolve()
+current_dir = current_file.parent
+root_dir = current_dir.parent
+
+# List all possible backend paths
 possible_backend_paths = [
-    current_file.parent.parent / "backend",  # Standard structure
-    current_file.parent / "backend",  # If backend is in api/
+    root_dir / "backend",  # Standard structure: /api/index.py -> /backend
+    current_dir / "backend",  # If backend is in api/
     Path("/var/task/backend"),  # Vercel function environment
+    Path("/var/task") / "backend",  # Alternative Vercel path
     Path(os.getcwd()) / "backend",  # Current working directory
+    Path(os.getcwd()),  # If cwd is already backend
 ]
 
 logger.info(f"Current file: {current_file}")
+logger.info(f"Current directory: {current_dir}")
+logger.info(f"Root directory: {root_dir}")
 logger.info(f"Current working directory: {os.getcwd()}")
-logger.info(f"Python path: {sys.path}")
+logger.info(f"Initial Python path: {sys.path}")
+
+# List all files in current directory for debugging
+try:
+    logger.info(f"Files in current directory: {list(current_dir.iterdir())}")
+except Exception as e:
+    logger.warning(f"Could not list current directory: {e}")
+
+# List all files in root directory for debugging
+try:
+    logger.info(f"Files in root directory: {list(root_dir.iterdir())}")
+except Exception as e:
+    logger.warning(f"Could not list root directory: {e}")
 
 backend_dir = None
 for path in possible_backend_paths:
     logger.info(f"Checking path: {path} (exists: {path.exists()})")
-    if path.exists() and (path / "api").exists():
-        backend_dir = path
-        logger.info(f"Found backend directory: {backend_dir}")
-        break
+    if path.exists():
+        # Check if it's a directory and has api subdirectory
+        if path.is_dir():
+            api_subdir = path / "api"
+            if api_subdir.exists():
+                backend_dir = path
+                logger.info(f"Found backend directory: {backend_dir}")
+                break
+            else:
+                # Maybe the path itself is the backend (if we're already in backend)
+                if (path / "config.py").exists() or (path / "api").exists():
+                    backend_dir = path
+                    logger.info(f"Found backend directory (by config.py): {backend_dir}")
+                    break
 
 if backend_dir:
     sys.path.insert(0, str(backend_dir))
     os.chdir(str(backend_dir))  # Change working directory to backend
-    logger.info(f"Added {backend_dir} to Python path and changed working directory")
+    logger.info(f"Added {backend_dir} to Python path and changed working directory to {backend_dir}")
+    logger.info(f"Updated Python path: {sys.path}")
 else:
     # Fallback: try to find backend in current path
     cwd = os.getcwd()
     logger.warning(f"Backend directory not found in standard locations. Current directory: {cwd}")
-    if "backend" in cwd:
-        sys.path.insert(0, cwd)
-        logger.info(f"Added current directory to Python path: {cwd}")
-    else:
-        # Last resort: add current directory
-        parent_dir = Path(__file__).parent.parent
-        sys.path.insert(0, str(parent_dir))
-        logger.info(f"Added parent directory to Python path: {parent_dir}")
+    
+    # Try adding root directory
+    sys.path.insert(0, str(root_dir))
+    logger.info(f"Added root directory to Python path: {root_dir}")
+    
+    # Also try current directory if it contains backend files
+    if (current_dir / "config.py").exists() or (current_dir / "api").exists():
+        sys.path.insert(0, str(current_dir))
+        logger.info(f"Added current directory to Python path: {current_dir}")
+    
+    logger.info(f"Final Python path: {sys.path}")
 
 try:
+    logger.info("Attempting to import mangum...")
     from mangum import Mangum
+    logger.info("Successfully imported Mangum")
+except ImportError as e:
+    logger.error(f"Failed to import Mangum: {e}")
+    logger.error("Make sure mangum is in api/requirements.txt")
+    raise
+
+try:
+    logger.info("Attempting to import api.main...")
     from api.main import app
+    logger.info("Successfully imported FastAPI app")
+except ImportError as e:
+    logger.error(f"Failed to import api.main: {e}")
+    logger.error(f"Current Python path: {sys.path}")
+    logger.error(f"Current working directory: {os.getcwd()}")
     
-    logger.info("Successfully imported Mangum and FastAPI app")
+    # Try to list what's available
+    try:
+        import api
+        logger.info(f"api module location: {api.__file__}")
+    except Exception as e2:
+        logger.error(f"Could not find api module: {e2}")
     
+    raise
+
+try:
+    logger.info("Creating Mangum handler...")
     # Create Mangum handler for Vercel Functions
     handler = Mangum(app, lifespan="off")
     logger.info("Mangum handler created successfully")
 except Exception as e:
-    logger.error(f"Failed to import or create handler: {e}", exc_info=True)
+    logger.error(f"Failed to create Mangum handler: {e}", exc_info=True)
     raise
 

@@ -66,29 +66,20 @@ else:
 logger.info(f"DEBUG: {os.getenv('DEBUG', 'NOT SET')}")
 logger.info(f"CAMERA_ENABLED: {os.getenv('CAMERA_ENABLED', 'NOT SET')}")
 
-# --- 【重要】FastAPIのappをインポートしてMangumでラップ ---
-# VercelのPythonランタイムはASGIアプリを直接サポートしていないため、
-# Mangumを使用してAWS Lambda形式のハンドラに変換します
+# --- 【重要】FastAPIのappをインポート ---
+# VercelのPythonランタイムはASGIアプリを直接サポートしています
+# 'handler'という変数名は避け、'app'を使用します
+# 'handler'という名前はBaseHTTPRequestHandlerのサブクラスとして扱われるため、エラーが発生します
 try:
     logger.info("Attempting to import api.main...")
     from api.main import app
     logger.info("Successfully imported FastAPI app")
     logger.info(f"FastAPI app type: {type(app)}")
+    logger.info("App ready for Vercel to start")
     
-    # Mangumを使用してASGIアプリをLambdaハンドラに変換
-    try:
-        from mangum import Mangum
-        logger.info("Importing Mangum...")
-        handler = Mangum(app, lifespan="off")
-        logger.info("Mangum handler created successfully")
-        logger.info("App ready for Vercel to start")
-    except ImportError as e:
-        logger.error(f"Failed to import Mangum: {e}")
-        logger.error("Mangum is required for Vercel deployment. Please ensure it's in api/requirements.txt")
-        raise
-    except Exception as e:
-        logger.error(f"Failed to create Mangum handler: {e}", exc_info=True)
-        raise
+    # Mangumは使用しません
+    # VercelはFastAPIアプリ（ASGIアプリ）を直接サポートしています
+    # 'handler'変数を定義しないことで、VercelがASGIアプリとして認識します
         
 except ImportError as e:
     logger.error(f"Failed to import api.main: {e}")
@@ -107,6 +98,7 @@ except Exception as e:
     logger.error(f"Unexpected error importing api.main: {e}", exc_info=True)
     raise
 
-# Export handler for Vercel
-# Vercel looks for 'handler' variable in the module for Python functions
-__all__ = ["handler"]
+# Export app for Vercel
+# Vercel looks for 'app' variable and treats it as an ASGI application
+# DO NOT define 'handler' variable - it causes TypeError
+__all__ = ["app"]

@@ -19,11 +19,20 @@ CameraProcessor = None
 camera_router = None
 try:
     from camera.processor import CameraProcessor as _CameraProcessor
-    from api.routes import camera
     CameraProcessor = _CameraProcessor
+except (ImportError, Exception) as e:
+    # Catch all exceptions to prevent import errors from breaking the app
+    logger.warning(f"Camera processor not available. Error: {e}")
+    CameraProcessor = None
+
+# Try to import camera router separately
+try:
+    from api.routes import camera
     camera_router = camera
-except ImportError:
-    logger.warning("Camera dependencies not available. Camera features will be disabled.")
+except (ImportError, Exception) as e:
+    # Catch all exceptions to prevent import errors from breaking the app
+    logger.warning(f"Camera router not available. Error: {e}")
+    camera_router = None
 
 # Global camera processor instance
 camera_processor = None

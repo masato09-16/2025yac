@@ -9,20 +9,22 @@ from datetime import datetime
 
 from database.session import get_db
 from database.models.user import SearchHistory, User
-from api.routes.auth import session_store
+from api.routes.auth import verify_session_token
 
 router = APIRouter(prefix="/search-history", tags=["search-history"])
 
 
 def get_current_user_id(token: Optional[str] = Query(None)) -> str:
-    """Get current user ID from token"""
+    """Get current user ID from JWT token"""
     if not token:
         raise HTTPException(status_code=401, detail="Authentication required")
     
-    if token not in session_store:
+    # Verify JWT session token
+    session_data = verify_session_token(token)
+    if not session_data:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     
-    user_id = session_store[token].get("user_id")
+    user_id = session_data.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid session")
     

@@ -73,14 +73,13 @@ Google OAuth認証を使用する場合：
 ```
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI=https://your-app.vercel.app/api/v1/auth/callback
-FRONTEND_URL=https://your-app.vercel.app
+GOOGLE_REDIRECT_URI=https://2025yac.vercel.app/api/v1/auth/callback
 ```
 
 **重要**: 
 - `GOOGLE_REDIRECT_URI`はバックエンドのコールバックURL（`/api/v1/auth/callback`）
-- `FRONTEND_URL`はフロントエンドのベースURL（認証後のリダイレクト先）
-- 両方とも本番環境のドメインを設定してください（例: `https://2025yac.vercel.app`）
+- `FRONTEND_URL`はオプション（デフォルト: `https://2025yac.vercel.app`）
+- カスタムドメインを使用する場合のみ、`FRONTEND_URL`を設定してください
 
 
 ### 7. DATABASE_ECHO

@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = ""  # Set via GOOGLE_REDIRECT_URI environment variable
     
+    # Frontend URL for OAuth redirects
+    # Development: http://localhost:8080
+    # Production: https://2025yac.vercel.app or your custom domain
+    frontend_url: str = "http://localhost:8080"  # Set via FRONTEND_URL environment variable
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=False,

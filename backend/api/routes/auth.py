@@ -116,8 +116,7 @@ async def callback(
         del session_store[state]
         
         # Redirect to frontend with session token
-        frontend_url = "http://localhost:8080"  # TODO: Make this configurable
-        redirect_url = f"{frontend_url}/auth/callback?token={session_token}"
+        redirect_url = f"{settings.frontend_url}/auth/callback?token={session_token}"
         
         return RedirectResponse(url=redirect_url)
         

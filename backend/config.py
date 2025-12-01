@@ -43,12 +43,8 @@ class Settings(BaseSettings):
     redis_url: str = ""
     redis_enabled: bool = False
     
-    # CORS
-    # Set via ALLOWED_ORIGINS environment variable (comma-separated)
-    # Example: https://your-app.vercel.app,https://your-custom-domain.com
-    # If not set, defaults to allow all origins in production
-    # Note: Excluded from automatic env parsing to avoid JSON decode errors
-    allowed_origins: List[str] = Field(default=[], exclude=True)
+    # CORS - NOT a Pydantic field to avoid env var parsing issues
+    # Handled manually in __init__ from ALLOWED_ORIGINS env var
     
     # Google OAuth Settings
     google_client_id: str = ""
@@ -67,14 +63,17 @@ class Settings(BaseSettings):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Override allowed_origins from environment variable if provided
+        
+        # Manually handle ALLOWED_ORIGINS to avoid Pydantic JSON parsing errors
         allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
         if allowed_origins_env:
             self.allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
-        # If still empty and in production, allow all origins
-        if not self.allowed_origins and not self.debug:
-            # Allow requests from same origin (Vercel serves both frontend and API)
-            self.allowed_origins = ["*"]  # Allow all origins in production (can be restricted via env var)
+        else:
+            # If not set and in production, allow all origins
+            if not self.debug:
+                self.allowed_origins = ["*"]
+            else:
+                self.allowed_origins = []
 
 
 # Global settings instance

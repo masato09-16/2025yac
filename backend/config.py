@@ -22,9 +22,7 @@ class Settings(BaseSettings):
     frontend_polling_interval: int = 30000
     
     # API Settings
-    # Vercel deployment: Use /v1 prefix (Vercel handles /api routing)
-    # Local development: Use /api/v1 prefix
-    api_v1_prefix: str = "/v1"
+    api_v1_prefix: str = "/api/v1"
     debug: bool = False  # Production default
     secret_key: str = ""  # Required: Set via SECRET_KEY environment variable
     

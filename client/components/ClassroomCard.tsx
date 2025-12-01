@@ -7,7 +7,7 @@ import type { Classroom } from '@shared/data';
 export type ClassroomStatus = 'available' | 'in-use';
 
 // 後方互換性のためのエクスポート
-export interface ClassroomInfo extends Classroom {}
+export interface ClassroomInfo extends Classroom { }
 
 interface ClassroomCardProps {
   classroom: Classroom | ClassroomInfo;
@@ -18,15 +18,27 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
   const { isAuthenticated } = useAuth();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isLoadingFavorite, setIsLoadingFavorite] = useState(false);
-  
+
   const isAvailable = classroom.status === 'available';
   const isInUse = classroom.status === 'in-use' || classroom.status === 'occupied' || classroom.status === 'full';
-  
-  // データがない教室（現在の在室人数が0で授業もない）を判定
-  const hasNoData = !classroom.activeClass && 
-                   (!classroom.currentOccupancy || classroom.currentOccupancy === 0) &&
-                   classroom.status === 'available';
-  
+
+  // カメラがオフラインかどうかを判定（最後の更新が30秒以上前）
+  const isCameraOffline = () => {
+    if (!classroom.lastUpdated) return true;
+    const lastUpdate = new Date(classroom.lastUpdated).getTime();
+    const now = Date.now();
+    const threshold = 30 * 1000; // 30秒
+    return (now - lastUpdate) > threshold;
+  };
+
+  const cameraOffline = isCameraOffline();
+
+  // データがない教室（カメラオフライン または 現在の在室人数が0で授業もない）を判定
+  const hasNoData = cameraOffline ||
+    (!classroom.activeClass &&
+      (!classroom.currentOccupancy || classroom.currentOccupancy === 0) &&
+      classroom.status === 'available');
+
   // Check favorite status on mount
   useEffect(() => {
     if (isAuthenticated) {
@@ -35,13 +47,13 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
         .catch(() => setIsFavorite(false));
     }
   }, [isAuthenticated, classroom.id]);
-  
+
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isAuthenticated) {
       return;
     }
-    
+
     setIsLoadingFavorite(true);
     try {
       if (isFavorite) {
@@ -59,10 +71,10 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
       setIsLoadingFavorite(false);
     }
   };
-  
+
   // Color scheme based on status (色彩心理学に基づく)
   let statusColor, borderColor, bgColor, textColor, badgeColor, statusText;
-  
+
   if (hasNoData) {
     // データなし = 灰色（中立）
     statusColor = 'bg-gray-400';
@@ -70,7 +82,7 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
     bgColor = 'bg-gray-50';
     textColor = 'text-gray-600';
     badgeColor = 'bg-gray-200 text-gray-700';
-    statusText = 'データなし';
+    statusText = cameraOffline ? 'カメラオフライン' : 'データなし';
   } else if (isAvailable) {
     // 空き = 緑色（安心感、成功）
     statusColor = 'bg-green-500';
@@ -88,14 +100,14 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
     badgeColor = 'bg-red-100 text-red-800';
     statusText = classroom.statusDetail || '使用中';
   }
-  
+
   // Format time from "HH:MM:SS" to "HH:MM"
   const formatTime = (timeStr: string) => {
     return timeStr.split(':').slice(0, 2).join(':');
   };
 
   // 占有率を計算（視覚的フィードバック用）
-  const occupancyRate = classroom.capacity > 0 
+  const occupancyRate = classroom.capacity > 0
     ? Math.min((classroom.currentOccupancy || 0) / classroom.capacity, 1.0)
     : 0;
 
@@ -114,7 +126,7 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
     `}>
       {/* Status accent bar (視覚的階層: 最上部に重要な情報) */}
       <div className={`absolute top-0 left-0 w-full h-1.5 ${statusColor} transition-all duration-300`}></div>
-      
+
       {/* Favorite button (右下) */}
       {isAuthenticated && (
         <button
@@ -124,8 +136,8 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
             absolute bottom-2 right-2 z-10
             p-1.5 rounded-full
             transition-all duration-200
-            ${isFavorite 
-              ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200' 
+            ${isFavorite
+              ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
               : 'bg-white/80 text-gray-400 hover:bg-white hover:text-yellow-500'
             }
             shadow-sm hover:shadow-md
@@ -136,7 +148,7 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
           <Star className={`w-3.5 h-3.5 ${isFavorite ? 'fill-current' : ''}`} />
         </button>
       )}
-      
+
       {/* モバイル: コンパクトレイアウト、デスクトップ: 詳細レイアウト */}
       <div className="flex flex-col h-full">
         {/* Room Number with status badge (最重要情報を上部に) */}
@@ -259,11 +271,10 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
                     {/* 占有率バー（デスクトップのみ） */}
                     <div className="hidden lg:flex items-center gap-1 ml-auto">
                       <div className="w-12 h-1 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-500 ${
-                            occupancyRate < 0.5 ? 'bg-green-500' : 
-                            occupancyRate < 0.8 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}
+                        <div
+                          className={`h-full transition-all duration-500 ${occupancyRate < 0.5 ? 'bg-green-500' :
+                              occupancyRate < 0.8 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
                           style={{ width: `${occupancyRate * 100}%` }}
                         ></div>
                       </div>

@@ -28,7 +28,13 @@ class Settings(BaseSettings):
     # Camera Settings
     camera_enabled: bool = False  # Disabled for Vercel (dependencies too large)
     camera_update_interval: int = 5  # seconds
-    detection_model_path: str = "models/yolov8n.pt"
+    detection_model_path: str = "yolov8n.pt"  # YOLOv8 model path
+    
+    # Camera source configuration
+    # For PC: use device ID (e.g., "0", "1", "2")
+    # For Raspberry Pi: use device path or URL (e.g., "/dev/video0", "http://...")
+    camera_source: str = "0"  # Default: PC camera device 0
+    camera_type: str = "pc"  # Options: "pc" or "raspberry_pi"
     
     # Redis (optional)
     redis_url: str = ""

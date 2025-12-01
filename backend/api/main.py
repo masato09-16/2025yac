@@ -40,7 +40,15 @@ app.add_middleware(
 app.include_router(classrooms.router, prefix=settings.api_v1_prefix)
 app.include_router(occupancy.router, prefix=settings.api_v1_prefix)
 app.include_router(schedules.router, prefix=settings.api_v1_prefix)
-# Camera router is disabled for Vercel deployment
+
+# Camera router - enable for local development only
+if settings.camera_enabled:
+    from api.routes import camera
+    app.include_router(camera.router, prefix=settings.api_v1_prefix)
+    logger.info("Camera routes enabled")
+else:
+    logger.info("Camera routes disabled (set CAMERA_ENABLED=true to enable)")
+
 app.include_router(auth.router, prefix=settings.api_v1_prefix)
 app.include_router(favorites.router, prefix=settings.api_v1_prefix)
 app.include_router(search_history.router, prefix=settings.api_v1_prefix)

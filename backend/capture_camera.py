@@ -23,6 +23,8 @@ from pathlib import Path
 from typing import Optional
 import logging
 from io import BytesIO
+import os
+from camera.source import CameraSource
 
 # ログ設定
 logging.basicConfig(
@@ -49,14 +51,24 @@ def capture_and_detect(
         api_url: APIのベースURL
         show_preview: プレビューウィンドウを表示するか
     """
-    logger.info(f"カメラ初期化中: デバイスID {camera_id}")
+    # 環境変数からカメラタイプとソースを取得（デフォルトはPCカメラ）
+    camera_type = os.getenv("CAMERA_TYPE", "pc")
+    camera_source = os.getenv("CAMERA_SOURCE", str(camera_id))
+    
+    logger.info(f"カメラ初期化中: タイプ={camera_type}, ソース={camera_source}")
     
     # カメラを開く
-    cap = cv2.VideoCapture(camera_id)
+    try:
+        cap = CameraSource.get_camera(camera_type, camera_source)
+    except ValueError as e:
+        logger.error(f"カメラの初期化に失敗しました: {e}")
+        return
     
     if not cap.isOpened():
-        logger.error(f"カメラを開けませんでした: デバイスID {camera_id}")
-        logger.info("ヒント: カメラが接続されているか確認してください。別のカメラIDを試す場合は --camera-id オプションを使用してください。")
+        logger.error(f"カメラを開けませんでした: タイプ={camera_type}, ソース={camera_source}")
+        logger.info("ヒント: カメラが接続されているか確認してください。")
+        logger.info(f"  PCカメラの場合: CAMERA_TYPE=pc CAMERA_SOURCE=0")
+        logger.info(f"  ラズパイの場合: CAMERA_TYPE=raspberry_pi CAMERA_SOURCE=/dev/video0")
         return
     
     # カメラの解像度を設定（オプション）

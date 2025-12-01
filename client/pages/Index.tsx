@@ -157,6 +157,8 @@ export default function Index() {
     // 人数だけを更新する関数
     const updateOccupancyOnly = async () => {
       try {
+        console.log('Polling occupancy data...'); // デバッグ用ログ
+
         // フィルター条件に応じたパラメータを構築
         const params: any = {};
         if (currentFilters.faculty !== 'all') {
@@ -168,17 +170,23 @@ export default function Index() {
 
         // 人数情報だけを取得（軽量なAPI）
         const occupancyData = await getAllOccupancy(params);
+        console.log('Received occupancy data:', occupancyData.length, 'records'); // デバッグ用ログ
 
         // 現在の教室データを更新（人数だけ）
         setClassrooms(prevClassrooms => {
           return prevClassrooms.map(classroom => {
             const occupancy = occupancyData.find(occ => occ.classroom_id === classroom.id);
             if (occupancy) {
-              return {
-                ...classroom,
-                currentOccupancy: occupancy.current_count,
-                lastUpdated: occupancy.last_updated,
-              };
+              // 値が変わった場合のみ更新（Reactの再レンダリング最適化）
+              if (classroom.currentOccupancy !== occupancy.current_count ||
+                classroom.lastUpdated !== occupancy.last_updated) {
+                console.log(`Updating classroom ${classroom.id}: ${classroom.currentOccupancy} -> ${occupancy.current_count}`);
+                return {
+                  ...classroom,
+                  currentOccupancy: occupancy.current_count,
+                  lastUpdated: occupancy.last_updated,
+                };
+              }
             }
             return classroom;
           });

@@ -4,7 +4,7 @@
 
 // In Vercel/production, use relative paths (same domain)
 // In development, use localhost:8000
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
+const API_BASE_URL = import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD ? '' : 'http://localhost:8000');
 
 /**
@@ -12,7 +12,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ||
  */
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   try {
     const response = await fetch(url, {
       ...options,
@@ -124,7 +124,7 @@ export async function getClassrooms(params?: {
 
   const query = queryParams.toString();
   const endpoint = `/api/v1/classrooms${query ? `?${query}` : ''}`;
-  
+
   return fetchAPI<Classroom[]>(endpoint);
 }
 
@@ -147,7 +147,7 @@ export async function getClassroomsWithStatus(params?: {
 
   const query = queryParams.toString();
   const endpoint = `/api/v1/occupancy/classrooms-with-status${query ? `?${query}` : ''}`;
-  
+
   return fetchAPI<ClassroomWithStatus[]>(endpoint);
 }
 
@@ -164,9 +164,12 @@ export async function getAllOccupancy(params?: {
   if (params?.building_id) queryParams.append('building_id', params.building_id);
   if (params?.available_only) queryParams.append('available_only', 'true');
 
+  // キャッシュを防ぐためにタイムスタンプを追加
+  queryParams.append('_t', Date.now().toString());
+
   const query = queryParams.toString();
   const endpoint = `/api/v1/occupancy${query ? `?${query}` : ''}`;
-  
+
   return fetchAPI<Occupancy[]>(endpoint);
 }
 
@@ -196,7 +199,7 @@ export async function getSchedules(params?: {
 
   const query = queryParams.toString();
   const endpoint = `/api/v1/schedules/${query ? `?${query}` : ''}`;
-  
+
   return fetchAPI<ClassSchedule[]>(endpoint);
 }
 
@@ -209,7 +212,7 @@ export async function getActiveSchedules(currentTime?: string): Promise<ClassSch
 
   const query = queryParams.toString();
   const endpoint = `/api/v1/schedules/active${query ? `?${query}` : ''}`;
-  
+
   return fetchAPI<ClassSchedule[]>(endpoint);
 }
 

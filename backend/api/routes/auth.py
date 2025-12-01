@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import secrets
 from urllib.parse import urlencode
 import httpx
+from jose import jwt, JWTError
 
 from database.session import get_db
 from database.models.user import User
@@ -16,8 +17,58 @@ from config import settings
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
-# In-memory session store (in production, use Redis or database)
-session_store: dict[str, dict] = {}
+# JWT settings for state and session tokens
+JWT_ALGORITHM = "HS256"
+STATE_EXPIRE_MINUTES = 10  # State tokens expire in 10 minutes
+SESSION_EXPIRE_DAYS = 30  # Session tokens expire in 30 days
+
+
+def create_state_token() -> str:
+    """Create a JWT state token for CSRF protection"""
+    expire = datetime.utcnow() + timedelta(minutes=STATE_EXPIRE_MINUTES)
+    to_encode = {
+        "exp": expire,
+        "type": "oauth_state",
+        "nonce": secrets.token_urlsafe(16)
+    }
+    return jwt.encode(to_encode, settings.secret_key, algorithm=JWT_ALGORITHM)
+
+
+def verify_state_token(token: str) -> bool:
+    """Verify a JWT state token"""
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[JWT_ALGORITHM])
+        return payload.get("type") == "oauth_state"
+    except JWTError:
+        return False
+
+
+def create_session_token(user_id: str, email: str, name: str) -> str:
+    """Create a JWT session token"""
+    expire = datetime.utcnow() + timedelta(days=SESSION_EXPIRE_DAYS)
+    to_encode = {
+        "exp": expire,
+        "type": "session",
+        "user_id": user_id,
+        "email": email,
+        "name": name
+    }
+    return jwt.encode(to_encode, settings.secret_key, algorithm=JWT_ALGORITHM)
+
+
+def verify_session_token(token: str) -> Optional[dict]:
+    """Verify a JWT session token and return user data"""
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "session":
+            return None
+        return {
+            "user_id": payload.get("user_id"),
+            "email": payload.get("email"),
+            "name": payload.get("name")
+        }
+    except JWTError:
+        return None
 
 
 @router.get("/login")
@@ -29,9 +80,8 @@ async def login():
             detail="Google OAuth認証情報が設定されていません。GOOGLE_CLIENT_IDとGOOGLE_CLIENT_SECRETを.envファイルに設定してください。"
         )
     
-    # Generate state for CSRF protection
-    state = secrets.token_urlsafe(32)
-    session_store[state] = {"type": "login"}
+    # Generate JWT state token for CSRF protection
+    state = create_state_token()
     
     # Build authorization URL manually
     params = {
@@ -56,8 +106,8 @@ async def callback(
     response: Response = None
 ):
     """Handle Google OAuth callback"""
-    # Verify state
-    if state not in session_store:
+    # Verify JWT state token
+    if not verify_state_token(state):
         raise HTTPException(status_code=400, detail="Invalid state parameter")
     
     try:
@@ -104,16 +154,8 @@ async def callback(
         db.commit()
         db.refresh(user)
         
-        # Create session token
-        session_token = secrets.token_urlsafe(32)
-        session_store[session_token] = {
-            "user_id": user.id,
-            "email": user.email,
-            "name": user.name,
-        }
-        
-        # Clean up state
-        del session_store[state]
+        # Create JWT session token
+        session_token = create_session_token(user.id, user.email, user.name)
         
         # Redirect to frontend with session token
         redirect_url = f"{settings.frontend_url}/auth/callback?token={session_token}"
@@ -133,12 +175,12 @@ async def get_current_user(
     if not token:
         raise HTTPException(status_code=401, detail="No token provided")
     
-    if token not in session_store:
+    # Verify JWT session token
+    session_data = verify_session_token(token)
+    if not session_data:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     
-    session_data = session_store[token]
     user_id = session_data.get("user_id")
-    
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid session")
     
@@ -157,8 +199,7 @@ async def get_current_user(
 @router.post("/logout")
 async def logout(token: Optional[str] = None):
     """Logout user"""
-    if token and token in session_store:
-        del session_store[token]
-    
+    # With JWT tokens, logout is handled client-side by removing the token
+    # No server-side action needed since tokens are stateless
     return {"message": "Logged out successfully"}
 

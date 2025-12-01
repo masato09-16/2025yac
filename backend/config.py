@@ -2,6 +2,7 @@
 Configuration settings for the FastAPI application
 """
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 from typing import List
 import os
 
@@ -45,8 +46,9 @@ class Settings(BaseSettings):
     # CORS
     # Set via ALLOWED_ORIGINS environment variable (comma-separated)
     # Example: https://your-app.vercel.app,https://your-custom-domain.com
-    # If not set, defaults to empty list (CORS will need to be configured)
-    allowed_origins: List[str] = []
+    # If not set, defaults to allow all origins in production
+    # Note: Excluded from automatic env parsing to avoid JSON decode errors
+    allowed_origins: List[str] = Field(default=[], exclude=True)
     
     # Google OAuth Settings
     google_client_id: str = ""
@@ -66,9 +68,10 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Override allowed_origins from environment variable if provided
-        if os.getenv("ALLOWED_ORIGINS"):
-            self.allowed_origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS").split(",")]
-        # If still empty and in production, add common Vercel patterns
+        allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
+        if allowed_origins_env:
+            self.allowed_origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+        # If still empty and in production, allow all origins
         if not self.allowed_origins and not self.debug:
             # Allow requests from same origin (Vercel serves both frontend and API)
             self.allowed_origins = ["*"]  # Allow all origins in production (can be restricted via env var)

@@ -1,3 +1,4 @@
+```json
 {
   "buildCommand": "npm run build:client",
   "outputDirectory": "dist/spa",
@@ -5,6 +6,10 @@
     {
       "source": "/api/:path*",
       "destination": "/api/index.py"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "functions": {
@@ -14,3 +19,4 @@
     }
   }
 }
+```

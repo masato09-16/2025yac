@@ -38,7 +38,7 @@ export default function Index() {
       setFavoriteIds(new Set());
       return;
     }
-    
+
     try {
       const favorites = await getFavorites();
       const ids = new Set(favorites.map(f => f.classroom_id));
@@ -59,7 +59,7 @@ export default function Index() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const params: any = {};
         if (currentFilters.faculty !== 'all') {
           params.faculty = currentFilters.faculty;
@@ -67,15 +67,15 @@ export default function Index() {
         if (currentFilters.building !== 'all') {
           params.building_id = currentFilters.building;
         }
-        
+
         // Add date and period parameters if in future mode
         if (currentFilters.searchMode === 'future' && currentFilters.targetDate) {
           params.target_date = currentFilters.targetDate;
           params.target_period = parseInt(currentFilters.period);
         }
-        
+
         const data = await getClassroomsWithStatus(params);
-        
+
         // Save search history if authenticated
         if (isAuthenticated) {
           try {
@@ -92,16 +92,16 @@ export default function Index() {
             // Don't fail the search if history save fails
           }
         }
-        
+
         // Convert API data to frontend format
         const convertedClassrooms: SharedClassroom[] = data.map((item) => {
           const classroom = item.classroom;
           const occupancy = item.occupancy;
-          
+
           // Map backend status to frontend status
           let status: 'available' | 'in-use' | 'occupied' | 'full' = 'available';
           const backendStatus = item.status;
-          
+
           if (backendStatus === 'in-class' || backendStatus === 'scheduled-low') {
             status = 'in-use';
           } else if (backendStatus === 'occupied') {
@@ -111,9 +111,9 @@ export default function Index() {
           } else {
             status = 'available';
           }
-          
+
           const currentOccupancy = occupancy?.current_count || 0;
-          
+
           return {
             id: classroom.id,
             roomNumber: classroom.room_number,
@@ -133,7 +133,7 @@ export default function Index() {
             imageUrl: item.image_url,
           };
         });
-        
+
         setClassrooms(convertedClassrooms);
       } catch (err) {
         console.error('Failed to fetch classrooms:', err);
@@ -189,14 +189,13 @@ export default function Index() {
       }
     };
 
-    // ポーリング間隔を環境変数から取得（デフォルト: 開発環境5秒、本番環境30秒）
-    // VITE_POLLING_INTERVAL はミリ秒単位（例: 5000 = 5秒、30000 = 30秒）
+    // ポーリング間隔を環境変数から取得（デフォルト: 5秒）
+    // リアルタイム性を重視して本番環境でも5秒に設定
     const pollingInterval = parseInt(
-      import.meta.env.VITE_POLLING_INTERVAL || 
-      (import.meta.env.PROD ? '30000' : '5000'),
+      import.meta.env.VITE_POLLING_INTERVAL || '5000',
       10
     );
-    
+
     const intervalId = setInterval(updateOccupancyOnly, pollingInterval);
 
     // クリーンアップ
@@ -212,18 +211,18 @@ export default function Index() {
   // Filter and sort classrooms
   const displayedClassrooms = useMemo(() => {
     let filtered = [...classrooms];
-    
+
     // Apply favorites filter first (if selected)
     if (currentFilters.status === 'favorites') {
       filtered = filtered.filter(classroom => favoriteIds.has(classroom.id));
     }
-    
+
     // Apply status filter
     if (currentFilters.status !== 'all' && currentFilters.status !== 'favorites') {
       filtered = filtered.filter(classroom => {
         // Check if classroom has no data (no schedule and no occupancy)
         const hasNoData = !classroom.activeClass && !classroom.currentOccupancy;
-        
+
         if (currentFilters.status === 'available') {
           return classroom.status === 'available' && !hasNoData;
         } else if (currentFilters.status === 'in-use') {
@@ -234,7 +233,7 @@ export default function Index() {
         return true;
       });
     }
-    
+
     // Sort by room number for better organization
     return filtered.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
   }, [classrooms, currentFilters.status, favoriteIds]);
@@ -243,15 +242,15 @@ export default function Index() {
     const hasNoData = !c.activeClass && !c.currentOccupancy;
     return c.status === 'available' && !hasNoData;
   }).length;
-  
-  const inUseCount = displayedClassrooms.filter(c => 
+
+  const inUseCount = displayedClassrooms.filter(c =>
     c.status === 'in-use' || c.status === 'full' || c.status === 'occupied'
   ).length;
-  
-  const noDataCount = displayedClassrooms.filter(c => 
+
+  const noDataCount = displayedClassrooms.filter(c =>
     !c.activeClass && !c.currentOccupancy
   ).length;
-  
+
   // Group classrooms by faculty for display
   const classroomsByFaculty = useMemo(() => {
     const groups: Record<string, typeof displayedClassrooms> = {};
@@ -314,7 +313,7 @@ export default function Index() {
                   全 {displayedClassrooms.length} 件
                 </p>
               </div>
-              
+
               {/* Stats badges (タイトルの横に配置) */}
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="
@@ -363,7 +362,7 @@ export default function Index() {
                 const hasNoData = !c.activeClass && !c.currentOccupancy;
                 return c.status === 'available' && !hasNoData;
               }).length;
-              
+
               return (
                 <div key={faculty} className="animate-fadeInUp">
                   {/* Faculty Header (視覚的階層: セクション区切り) */}
@@ -396,7 +395,7 @@ export default function Index() {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Classroom Cards Grid 
                      モバイル: 2カラム（コンパクトに）
                      タブレット: 3-4カラム
@@ -413,13 +412,13 @@ export default function Index() {
                     gap-1.5 sm:gap-2 lg:gap-2.5
                   ">
                     {classrooms.map((classroom, index) => (
-                      <div 
-                        key={classroom.id} 
+                      <div
+                        key={classroom.id}
                         style={{ animationDelay: `${index * 50}ms` }}
                         className="animate-fadeInUp"
                       >
-                        <ClassroomCard 
-                          classroom={classroom} 
+                        <ClassroomCard
+                          classroom={classroom}
                           onFavoriteChange={refreshFavorites}
                         />
                       </div>

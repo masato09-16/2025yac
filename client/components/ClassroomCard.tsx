@@ -260,12 +260,20 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
                 `}>
                   {classroom.capacity}名
                 </p>
-                {classroom.currentOccupancy !== undefined && (
+                {/* カメラオフライン時は「不明」を表示、それ以外は実際の人数を表示 */}
+                {cameraOffline ? (
+                  <>
+                    <span className="text-gray-400 text-[9px]">→</span>
+                    <span className="text-xs sm:text-sm font-extrabold text-gray-500">
+                      不明
+                    </span>
+                  </>
+                ) : classroom.currentOccupancy !== undefined ? (
                   <>
                     <span className="text-gray-400 text-[9px]">→</span>
                     <span className={`
                       text-xs sm:text-sm font-extrabold
-                      ${hasNoData ? 'text-gray-500' : isAvailable ? 'text-green-600' : 'text-red-600'}
+                      ${isAvailable ? 'text-green-600' : 'text-red-600'}
                     `}>
                       {classroom.currentOccupancy}名
                     </span>
@@ -274,7 +282,7 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
                       <div className="w-12 h-1 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all duration-500 ${occupancyRate < 0.5 ? 'bg-green-50' :
-                              occupancyRate < 0.8 ? 'bg-yellow-500' : 'bg-red-500'
+                            occupancyRate < 0.8 ? 'bg-yellow-500' : 'bg-red-500'
                             }`}
                           style={{ width: `${occupancyRate * 100}%` }}
                         ></div>
@@ -284,7 +292,7 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
                       </span>
                     </div>
                   </>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

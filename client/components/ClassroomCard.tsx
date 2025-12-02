@@ -33,12 +33,10 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
 
   const cameraOffline = isCameraOffline();
 
-  // データがない教室（カメラオフライン または データ自体が存在しない）を判定
-  // currentOccupancyが0の場合は有効なデータとして扱う
-  const hasNoData = cameraOffline ||
-    (!classroom.activeClass &&
-      (classroom.currentOccupancy === undefined || classroom.currentOccupancy === null) &&
-      classroom.status === 'available');
+  // データがない教室の判定
+  // カメラオフラインでも、授業がある場合は「使用中」として扱う
+  // カメラオフラインで授業もない場合のみ「データなし」
+  const hasNoData = cameraOffline && !classroom.activeClass;
 
   // Check favorite status on mount
   useEffect(() => {
@@ -179,7 +177,7 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
               flex items-center justify-center
             `}>
               <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap">
-                {hasNoData ? 'データなし' : isAvailable ? '空き' : '使用中'}
+                {hasNoData ? 'データなし' : (classroom.activeClass || isInUse) ? '使用中' : '空き'}
               </span>
             </div>
           </div>

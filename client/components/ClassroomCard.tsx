@@ -263,7 +263,7 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
                   <>
                     <span className="text-gray-400 text-[9px]">→</span>
                     <span className="text-xs sm:text-sm font-extrabold text-gray-500">
-                      不明
+                      ー
                     </span>
                   </>
                 ) : classroom.currentOccupancy !== undefined ? (

@@ -252,27 +252,7 @@ export default function About() {
           </CardContent>
         </Card>
 
-        {/* お問い合わせ */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Info className="w-5 h-5 text-ynu-blue" />
-              お問い合わせ
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-gray-600 mb-4">
-              システムに関するお問い合わせや不具合の報告は、大学の情報システム部門までご連絡ください。
-            </p>
-            <div className="flex gap-3">
-              <Link to="/">
-                <button className="px-4 py-2 bg-ynu-blue text-white rounded-lg hover:bg-ynu-blue-dark transition-colors text-sm font-semibold">
-                  トップページに戻る
-                </button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
     </div>
   );

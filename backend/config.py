@@ -62,6 +62,22 @@ class Settings(BaseSettings):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         
+        # Validate SECRET_KEY in production
+        if not self.secret_key:
+            if self.debug:
+                # Generate a random key for development
+                import secrets
+                self.secret_key = secrets.token_urlsafe(32)
+                print("⚠️  WARNING: Using auto-generated SECRET_KEY for development")
+                print("   Set SECRET_KEY in .env for production!")
+            else:
+                raise ValueError(
+                    "SECRET_KEY must be set in production environment. "
+                    "Generate one with: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+                )
+        elif len(self.secret_key) < 32 and not self.debug:
+            raise ValueError("SECRET_KEY must be at least 32 characters in production")
+        
         # Manually handle ALLOWED_ORIGINS to avoid Pydantic JSON parsing errors
         allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
         if allowed_origins_env:

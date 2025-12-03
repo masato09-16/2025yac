@@ -24,4 +24,9 @@ dist-ssr
 *.sw?
 
 .config/
-!.env
+
+# Environment variables (security)
+.env
+.env.*
+!.env.example
+!.env.template

@@ -36,6 +36,23 @@ app.add_middleware(
 
 # No middleware needed - database is pre-initialized in Supabase
 
+# Security headers middleware
+try:
+    from api.middleware.security import SecurityHeadersMiddleware
+    app.add_middleware(SecurityHeadersMiddleware)
+    logger.info("Security headers middleware enabled")
+except ImportError:
+    logger.warning("Security headers middleware not available")
+
+# Rate limiting middleware
+try:
+    from api.middleware.rate_limit import RateLimitMiddleware
+    # 120 requests per minute per IP (generous for polling)
+    app.add_middleware(RateLimitMiddleware, requests_per_minute=120)
+    logger.info("Rate limiting middleware enabled (120 req/min)")
+except ImportError:
+    logger.warning("Rate limiting middleware not available")
+
 # Include routers
 app.include_router(classrooms.router, prefix=settings.api_v1_prefix)
 app.include_router(occupancy.router, prefix=settings.api_v1_prefix)

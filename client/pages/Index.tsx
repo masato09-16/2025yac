@@ -228,15 +228,20 @@ export default function Index() {
     // Apply status filter
     if (currentFilters.status !== 'all' && currentFilters.status !== 'favorites') {
       filtered = filtered.filter(classroom => {
-        // Check if classroom has no data (no schedule and no occupancy)
-        const hasNoData = !classroom.activeClass && !classroom.currentOccupancy;
-
         if (currentFilters.status === 'available') {
-          return classroom.status === 'available' && !hasNoData;
+          // 空き: backend status が 'available' のもの
+          return classroom.status === 'available';
         } else if (currentFilters.status === 'in-use') {
-          return classroom.status === 'in-use' || classroom.status === 'full' || classroom.status === 'occupied';
+          // 使用中: backend status が 'in-use', 'occupied', 'full' のもの
+          return classroom.status === 'in-use' || classroom.status === 'occupied' || classroom.status === 'full';
         } else if (currentFilters.status === 'no-data') {
-          return hasNoData;
+          // データなし: カメラオフラインかつ授業なし
+          // lastUpdatedが30秒以上前、かつactiveClassがない
+          const lastUpdate = classroom.lastUpdated ? new Date(classroom.lastUpdated).getTime() : 0;
+          const now = Date.now();
+          const threshold = 30 * 1000; // 30秒
+          const isCameraOffline = (now - lastUpdate) > threshold;
+          return isCameraOffline && !classroom.activeClass;
         }
         return true;
       });
@@ -246,18 +251,19 @@ export default function Index() {
     return filtered.sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
   }, [classrooms, currentFilters.status, favoriteIds]);
 
-  const availableCount = displayedClassrooms.filter(c => {
-    const hasNoData = !c.activeClass && !c.currentOccupancy;
-    return c.status === 'available' && !hasNoData;
-  }).length;
+  const availableCount = displayedClassrooms.filter(c => c.status === 'available').length;
 
   const inUseCount = displayedClassrooms.filter(c =>
     c.status === 'in-use' || c.status === 'full' || c.status === 'occupied'
   ).length;
 
-  const noDataCount = displayedClassrooms.filter(c =>
-    !c.activeClass && !c.currentOccupancy
-  ).length;
+  const noDataCount = displayedClassrooms.filter(c => {
+    const lastUpdate = c.lastUpdated ? new Date(c.lastUpdated).getTime() : 0;
+    const now = Date.now();
+    const threshold = 30 * 1000; // 30秒
+    const isCameraOffline = (now - lastUpdate) > threshold;
+    return isCameraOffline && !c.activeClass;
+  }).length;
 
   // Group classrooms by faculty for display
   const classroomsByFaculty = useMemo(() => {
@@ -366,10 +372,7 @@ export default function Index() {
           <div className="space-y-8 sm:space-y-12 lg:space-y-16">
             {Object.entries(classroomsByFaculty).map(([faculty, classrooms]) => {
               const facultyName = FACULTY_NAMES[faculty as keyof typeof FACULTY_NAMES];
-              const facultyAvailable = classrooms.filter(c => {
-                const hasNoData = !c.activeClass && !c.currentOccupancy;
-                return c.status === 'available' && !hasNoData;
-              }).length;
+              const facultyAvailable = classrooms.filter(c => c.status === 'available').length;
 
               return (
                 <div key={faculty} className="animate-fadeInUp">

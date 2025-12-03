@@ -169,15 +169,15 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
             </div>
             {/* ステータスバッジ（視覚的フィードバック） */}
             <div className={`
-              ${badgeColor} px-1.5 py-0.5 sm:px-2 sm:py-0.5 
-              rounded-full shadow-sm
-              flex-shrink-0
-              /* タッチターゲット: 最小サイズ */
-              min-w-[50px] min-h-[18px] sm:min-h-[20px]
-              flex items-center justify-center
-            `}>
+            ${badgeColor} px-1.5 py-0.5 sm:px-2 sm:py-0.5 
+            rounded-full shadow-sm
+            flex-shrink-0
+            /* タッチターゲット: 最小サイズ */
+            min-w-[50px] min-h-[18px] sm:min-h-[20px]
+            flex items-center justify-center
+          `}>
               <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap">
-                {hasNoData ? 'データなし' : (classroom.activeClass || isInUse) ? '使用中' : '空き'}
+                {hasNoData ? 'データなし' : isAvailable ? '空き' : '使用中'}
               </span>
             </div>
           </div>

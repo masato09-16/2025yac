@@ -164,17 +164,15 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* モバイル: テキスト選択最適化 */
-  @media (max-width: 640px) {
-    p, span, div {
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    
-    /* 入力フィールドは選択可能 */
-    input, textarea, select {
-      -webkit-user-select: text;
-      user-select: text;
-    }
+  /* テキスト選択最適化: UIテキストの選択を無効化 */
+  p, span, div, h1, h2, h3, h4, h5, h6, label, button {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  
+  /* 入力フィールドとコンテンツは選択可能 */
+  input, textarea, select, pre, code {
+    -webkit-user-select: text;
+    user-select: text;
   }
 }

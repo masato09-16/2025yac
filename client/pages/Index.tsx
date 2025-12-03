@@ -99,10 +99,12 @@ export default function Index() {
           const occupancy = item.occupancy;
 
           // Map backend status to frontend status
-          let status: 'available' | 'in-use' | 'occupied' | 'full' = 'available';
+          let status: 'available' | 'in-use' | 'occupied' | 'full' | 'no-data' = 'available';
           const backendStatus = item.status;
 
-          if (backendStatus === 'in-class' || backendStatus === 'scheduled-low') {
+          if (backendStatus === 'no-data') {
+            status = 'no-data';
+          } else if (backendStatus === 'in-class' || backendStatus === 'scheduled-low') {
             status = 'in-use';
           } else if (backendStatus === 'occupied') {
             status = 'full';
@@ -235,13 +237,8 @@ export default function Index() {
           // 使用中: backend status が 'in-use', 'occupied', 'full' のもの
           return classroom.status === 'in-use' || classroom.status === 'occupied' || classroom.status === 'full';
         } else if (currentFilters.status === 'no-data') {
-          // データなし: カメラオフラインかつ授業なし
-          // lastUpdatedが30秒以上前、かつactiveClassがない
-          const lastUpdate = classroom.lastUpdated ? new Date(classroom.lastUpdated).getTime() : 0;
-          const now = Date.now();
-          const threshold = 30 * 1000; // 30秒
-          const isCameraOffline = (now - lastUpdate) > threshold;
-          return isCameraOffline && !classroom.activeClass;
+          // データなし: backend status が 'no-data' のもの
+          return classroom.status === 'no-data';
         }
         return true;
       });
@@ -257,13 +254,7 @@ export default function Index() {
     c.status === 'in-use' || c.status === 'full' || c.status === 'occupied'
   ).length;
 
-  const noDataCount = displayedClassrooms.filter(c => {
-    const lastUpdate = c.lastUpdated ? new Date(c.lastUpdated).getTime() : 0;
-    const now = Date.now();
-    const threshold = 30 * 1000; // 30秒
-    const isCameraOffline = (now - lastUpdate) > threshold;
-    return isCameraOffline && !c.activeClass;
-  }).length;
+  const noDataCount = displayedClassrooms.filter(c => c.status === 'no-data').length;
 
   // Group classrooms by faculty for display
   const classroomsByFaculty = useMemo(() => {

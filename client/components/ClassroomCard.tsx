@@ -21,22 +21,7 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
 
   const isAvailable = classroom.status === 'available';
   const isInUse = classroom.status === 'in-use' || classroom.status === 'occupied' || classroom.status === 'full';
-
-  // カメラがオフラインかどうかを判定（最後の更新が30秒以上前）
-  const isCameraOffline = () => {
-    if (!classroom.lastUpdated) return true;
-    const lastUpdate = new Date(classroom.lastUpdated).getTime();
-    const now = Date.now();
-    const threshold = 30 * 1000; // 30秒
-    return (now - lastUpdate) > threshold;
-  };
-
-  const cameraOffline = isCameraOffline();
-
-  // データがない教室の判定
-  // カメラオフラインでも、授業がある場合は「使用中」として扱う
-  // カメラオフラインで授業もない場合のみ「データなし」
-  const hasNoData = cameraOffline && !classroom.activeClass;
+  const hasNoData = classroom.status === 'no-data';
 
   // Check favorite status on mount
   useEffect(() => {
@@ -81,7 +66,7 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
     bgColor = 'bg-gray-50';
     textColor = 'text-gray-600';
     badgeColor = 'bg-gray-200 text-gray-700';
-    statusText = cameraOffline ? 'カメラオフライン' : 'データなし';
+    statusText = 'データなし';
   } else if (isAvailable) {
     // 空き = 緑色（安心感、成功）
     statusColor = 'bg-green-500';
@@ -258,8 +243,8 @@ export const ClassroomCard: React.FC<ClassroomCardProps> = ({ classroom, onFavor
                 `}>
                   {classroom.capacity}名
                 </p>
-                {/* カメラオフライン時は「不明」を表示、それ以外は実際の人数を表示 */}
-                {cameraOffline ? (
+                {/* データなし時は「ー」を表示、それ以外は実際の人数を表示 */}
+                {hasNoData ? (
                   <>
                     <span className="text-gray-400 text-[9px]">→</span>
                     <span className="text-xs sm:text-sm font-extrabold text-gray-500">

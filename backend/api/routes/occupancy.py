@@ -123,6 +123,15 @@ async def get_classrooms_with_status(
         current_count = occupancy.current_count if occupancy else 0
         occupancy_rate = occupancy.occupancy_rate if occupancy else 0.0
         
+        # Check if camera is offline (no occupancy data or data is stale)
+        camera_offline = False
+        if occupancy and occupancy.last_updated:
+            from datetime import timedelta
+            time_since_update = datetime.now() - occupancy.last_updated.replace(tzinfo=None)
+            camera_offline = time_since_update > timedelta(seconds=30)
+        else:
+            camera_offline = True  # No occupancy data at all
+        
         # Status logic differs for future vs current time
         if use_future_time:
             # For future time, only check schedule (no occupancy data available)
@@ -135,31 +144,44 @@ async def get_classrooms_with_status(
             is_available = (status == "available")
         else:
             # For current time, use both schedule and occupancy
-            # Status logic:
-            # 1. If class is scheduled AND people are present -> "in-class" (授業中)
-            # 2. If class is scheduled BUT few people -> "scheduled-low" (授業予定だが人少ない)
-            # 3. If NO class scheduled BUT many people -> "occupied" (空き教室だが混雑)
-            # 4. If NO class scheduled AND few people -> "available" (空き教室)
-            
-            if active_schedule:
-                if occupancy_rate >= 0.1:  # 10% or more occupied
+            # Priority: Check if we have valid data first
+            if camera_offline and not active_schedule:
+                # No camera data AND no scheduled class -> "no-data"
+                status = "no-data"
+                status_detail = "データなし"
+                is_available = False
+            elif active_schedule:
+                # Class is scheduled
+                if camera_offline:
+                    # Camera offline but class scheduled -> assume in-class
+                    status = "in-class"
+                    status_detail = f"授業中: {active_schedule.class_name}"
+                elif occupancy_rate >= 0.1:  # 10% or more occupied
                     status = "in-class"
                     status_detail = f"授業中: {active_schedule.class_name}"
                 else:
                     status = "scheduled-low"
                     status_detail = f"授業予定: {active_schedule.class_name}"
+                is_available = False
             else:
-                if occupancy_rate >= 0.5:  # 50% or more occupied
+                # No scheduled class
+                if camera_offline:
+                    # Camera offline and no class -> "no-data"
+                    status = "no-data"
+                    status_detail = "データなし"
+                    is_available = False
+                elif occupancy_rate >= 0.5:  # 50% or more occupied
                     status = "occupied"
                     status_detail = "空き教室（混雑）"
+                    is_available = False
                 elif occupancy_rate >= 0.1:  # 10-50% occupied
                     status = "partially-occupied"
                     status_detail = "空き教室（一部使用中）"
+                    is_available = True
                 else:
                     status = "available"
                     status_detail = "空き教室"
-            
-            is_available = (status in ["available", "partially-occupied"])
+                    is_available = True
         
         # 解析結果画像のURLを構築（存在する場合）
         from pathlib import Path

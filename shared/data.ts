@@ -37,7 +37,7 @@ export interface Classroom {
   buildingId: string;
   faculty: Faculty;
   floor: number;
-  status: 'available' | 'in-use' | 'occupied' | 'full';
+  status: 'available' | 'in-use' | 'occupied' | 'full' | 'no-data';
   className?: string;
   capacity: number;
   currentOccupancy?: number;
@@ -56,20 +56,20 @@ export const BUILDINGS: Building[] = [
   { id: 'edu-6', name: '教育学部講義棟6号館', faculty: 'education', floors: [1, 2] },
   { id: 'edu-7', name: '教育学部講義棟7号館・化学実験室', faculty: 'education', floors: [1, 2, 3] },
   { id: 'edu-8', name: '教育学部講義棟8号館', faculty: 'education', floors: [1, 2] },
-  
+
   // 理工学部
   { id: 'eng-a', name: '理工学部講義棟A・物理実験室', faculty: 'engineering', floors: [1, 2, 3] },
   { id: 'eng-b', name: '理工学部講義棟B', faculty: 'engineering', floors: [1, 2] },
   { id: 'eng-c', name: '理工学部講義棟C', faculty: 'engineering', floors: [1, 2, 3] },
-  
+
   // 経済学部
   { id: 'econ-1', name: '経済学部講義棟1号館', faculty: 'economics', floors: [1, 2] },
   { id: 'econ-2', name: '経済学部講義棟2号館', faculty: 'economics', floors: [1, 2] },
-  
+
   // 経営学部
   { id: 'bus-1', name: '経営学部講義棟1号館', faculty: 'business', floors: [1, 2] },
   { id: 'bus-2', name: '経営学部講義棟2号館', faculty: 'business', floors: [1, 2, 3] },
-  
+
   // 都市科学部（教育学部講義棟8号館と共用）
   { id: 'urban-8', name: '都市科学部講義棟', faculty: 'urban-sciences', floors: [1, 2] },
 ];

@@ -35,7 +35,7 @@ class ClassSchedule(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
-    classroom = relationship("Classroom", backref="schedules")
+    classroom = relationship("Classroom", back_populates="schedules")
     
     def is_active_now(self, current_datetime: Optional[datetime] = None) -> bool:
         """

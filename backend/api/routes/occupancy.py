@@ -63,8 +63,16 @@ async def get_classrooms_with_status(
     
     If target_date and target_period are provided, check schedule for that specific time.
     Otherwise, check current time status.
+    
+    OPTIMIZED: Uses eager loading to prevent N+1 queries
     """
-    query = db.query(Classroom)
+    from sqlalchemy.orm import joinedload
+    
+    # Eager load occupancy and schedules to prevent N+1 queries
+    query = db.query(Classroom).options(
+        joinedload(Classroom.occupancy),
+        joinedload(Classroom.schedules)
+    )
     
     if faculty:
         query = query.filter(Classroom.faculty == faculty)
@@ -91,10 +99,11 @@ async def get_classrooms_with_status(
     
     result = []
     for classroom in classrooms:
-        occupancy = db.query(DBOccupancy).filter(DBOccupancy.classroom_id == classroom.id).first()
+        # Occupancy is already loaded via joinedload - no additional query
+        occupancy = classroom.occupancy
         
-        # Check if there's a scheduled class
-        all_schedules = db.query(ClassSchedule).filter(ClassSchedule.classroom_id == classroom.id).all()
+        # Schedules are already loaded via joinedload - no additional query
+        all_schedules = classroom.schedules
         active_schedule = None
         
         if use_future_time:

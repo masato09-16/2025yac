@@ -44,6 +44,7 @@ class Favorite(Base):
     
     # Relationships
     user = relationship("User", back_populates="favorites")
+    classroom = relationship("Classroom", foreign_keys=[classroom_id], primaryjoin="Favorite.classroom_id == Classroom.id")
 
 
 class SearchHistory(Base):

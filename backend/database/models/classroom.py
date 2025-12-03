@@ -24,6 +24,7 @@ class Classroom(Base):
     # Relationships
     occupancy = relationship("Occupancy", back_populates="classroom", uselist=False)
     occupancy_history = relationship("OccupancyHistory", back_populates="classroom")
+    schedules = relationship("ClassSchedule", back_populates="classroom")
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

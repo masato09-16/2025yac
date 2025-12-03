@@ -47,14 +47,23 @@ async def get_favorites(
     token: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Get user's favorite classrooms"""
+    """Get user's favorite classrooms
+    
+    OPTIMIZED: Uses eager loading to prevent N+1 queries
+    """
+    from sqlalchemy.orm import joinedload
+    
     user_id = get_current_user_id(token)
     
-    favorites = db.query(Favorite).filter(Favorite.user_id == user_id).all()
+    # Eager load classroom data to prevent N+1 queries
+    favorites = db.query(Favorite).options(
+        joinedload(Favorite.classroom)
+    ).filter(Favorite.user_id == user_id).all()
     
     result = []
     for fav in favorites:
-        classroom = db.query(Classroom).filter(Classroom.id == fav.classroom_id).first()
+        # Classroom is already loaded via joinedload - no additional query
+        classroom = fav.classroom
         if classroom:
             result.append({
                 "id": fav.id,

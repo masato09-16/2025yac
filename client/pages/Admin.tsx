@@ -12,7 +12,7 @@ import { FACULTY_NAMES, BUILDINGS, type Faculty } from '@shared/data';
 
 // In Vercel/production, use relative paths (same domain)
 // In development, use localhost:8000
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
+const API_BASE_URL = import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD ? '' : 'http://localhost:8000');
 
 interface ClassSchedule {
@@ -53,7 +53,7 @@ const PERIOD_TIMES: { [key: number]: [string, string] } = {
 
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<'classrooms' | 'schedules'>('classrooms');
-  
+
   // Schedules state
   const [schedules, setSchedules] = useState<ClassSchedule[]>([]);
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
@@ -66,7 +66,7 @@ export default function Admin() {
   // Classrooms state
   const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
   const [isAddingClassroom, setIsAddingClassroom] = useState(false);
-  const [classroomFilter, setClassroomFilter] = useState({ faculty: '', building_id: '' });
+  const [classroomFilter, setClassroomFilter] = useState({ faculty: 'all', building_id: 'all' });
 
   // Form states
   const [scheduleFormData, setScheduleFormData] = useState({
@@ -99,7 +99,7 @@ export default function Admin() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const [schedulesRes, classroomsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/v1/schedules/`),
         fetch(`${API_BASE_URL}/api/v1/classrooms/`),
@@ -348,8 +348,8 @@ export default function Admin() {
   });
 
   const filteredClassrooms = classrooms.filter(c => {
-    if (classroomFilter.faculty && c.faculty !== classroomFilter.faculty) return false;
-    if (classroomFilter.building_id && c.building_id !== classroomFilter.building_id) return false;
+    if (classroomFilter.faculty && classroomFilter.faculty !== 'all' && c.faculty !== classroomFilter.faculty) return false;
+    if (classroomFilter.building_id && classroomFilter.building_id !== 'all' && c.building_id !== classroomFilter.building_id) return false;
     return true;
   });
 
@@ -634,7 +634,7 @@ export default function Admin() {
                         <SelectValue placeholder="学部で絞り込み" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">すべて</SelectItem>
+                        <SelectItem value="all">すべて</SelectItem>
                         {Object.entries(FACULTY_NAMES).map(([id, names]) => (
                           <SelectItem key={id} value={id}>
                             {names.full}
@@ -651,7 +651,7 @@ export default function Admin() {
                       <SelectValue placeholder="建物で絞り込み" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">すべて</SelectItem>
+                      <SelectItem value="all">すべて</SelectItem>
                       {BUILDINGS.filter(b => !classroomFilter.faculty || b.faculty === classroomFilter.faculty).map((building) => (
                         <SelectItem key={building.id} value={building.id}>
                           {building.name}

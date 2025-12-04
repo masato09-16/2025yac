@@ -136,22 +136,56 @@ def seed_classrooms(force_update: bool = False):
         db.close()
 
 
-def seed_schedules():
-    """Seed class schedules"""
+def seed_schedules(force_update: bool = False):
+    """Seed class schedules from JSON file
+    
+    Args:
+        force_update: If True, update existing schedules and add new ones from JSON.
+                     If False, skip if schedules already exist.
+    """
     from database.session import SessionLocal
+    from data.schedules import _load_schedules  # 最新のJSONを再読み込み
+    
     db = SessionLocal()
     
     try:
         logger.info("Seeding class schedules...")
         
+        # 最新のJSONデータを再読み込み
+        current_schedules = _load_schedules()
+        logger.info(f"Loaded {len(current_schedules)} schedules from JSON")
+        
         # Check if schedules already exist
         existing_schedules = db.query(ClassSchedule).count()
-        if existing_schedules > 0:
-            logger.info("Schedules already seeded. Skipping...")
+        if existing_schedules > 0 and not force_update:
+            logger.info(f"Schedules already seeded ({existing_schedules} existing). Skipping...")
+            logger.info("To update with latest JSON data, use force_update=True")
             return
         
-        # Seed class schedules
-        for schedule in SAMPLE_SCHEDULES:
+        if force_update:
+            logger.info("Force update mode: Updating existing schedules and adding new ones...")
+        
+        # Get existing schedule IDs for comparison
+        existing_ids = {s.id for s in db.query(ClassSchedule).all()}
+        json_ids = {s['id'] for s in current_schedules}
+        
+        # Find schedules to add/update
+        to_add = [s for s in current_schedules if s['id'] not in existing_ids]
+        to_update = [s for s in current_schedules if s['id'] in existing_ids]
+        to_remove = existing_ids - json_ids
+        
+        logger.info(f"Adding {len(to_add)} new schedules")
+        logger.info(f"Updating {len(to_update)} existing schedules")
+        if to_remove:
+            logger.info(f"Removing {len(to_remove)} schedules not in JSON")
+        
+        # Remove schedules that are not in JSON (if force_update)
+        if force_update and to_remove:
+            for schedule_id in to_remove:
+                db.query(ClassSchedule).filter(ClassSchedule.id == schedule_id).delete()
+        
+        # Add new schedules
+        for schedule in to_add:
             db_schedule = ClassSchedule(
                 id=schedule['id'],
                 classroom_id=schedule['classroom_id'],
@@ -166,8 +200,24 @@ def seed_schedules():
             )
             db.add(db_schedule)
         
+        # Update existing schedules
+        if force_update:
+            for schedule in to_update:
+                db_schedule = db.query(ClassSchedule).filter(ClassSchedule.id == schedule['id']).first()
+                if db_schedule:
+                    db_schedule.classroom_id = schedule['classroom_id']
+                    db_schedule.class_name = schedule['class_name']
+                    db_schedule.instructor = schedule.get('instructor')
+                    db_schedule.day_of_week = schedule['day_of_week']
+                    db_schedule.period = schedule['period']
+                    db_schedule.start_time = schedule['start_time']
+                    db_schedule.end_time = schedule['end_time']
+                    db_schedule.semester = schedule.get('semester')
+                    db_schedule.course_code = schedule.get('course_code')
+        
         db.commit()
-        logger.info(f"Seeded {len(SAMPLE_SCHEDULES)} class schedules successfully")
+        final_count = db.query(ClassSchedule).count()
+        logger.info(f"Seeded {final_count} class schedules successfully (added: {len(to_add)}, updated: {len(to_update)})")
         
     except Exception as e:
         db.rollback()
@@ -177,15 +227,16 @@ def seed_schedules():
         db.close()
 
 
-def init_database(force_update_classrooms: bool = False):
+def init_database(force_update_classrooms: bool = False, force_update_schedules: bool = False):
     """Initialize database with tables and seed data
     
     Args:
         force_update_classrooms: If True, update classrooms from JSON even if they already exist
+        force_update_schedules: If True, update schedules from JSON even if they already exist
     """
     create_tables()
     seed_classrooms(force_update=force_update_classrooms)
-    seed_schedules()
+    seed_schedules(force_update=force_update_schedules)
 
 
 if __name__ == "__main__":

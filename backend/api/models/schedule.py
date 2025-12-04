@@ -13,8 +13,8 @@ class ClassScheduleBase(BaseModel):
     instructor: Optional[str] = None
     day_of_week: int  # 0=Monday, 6=Sunday
     period: int
-    start_time: time
-    end_time: time
+    start_time: Optional[time] = None  # 時限から自動設定されるためオプショナル
+    end_time: Optional[time] = None  # 時限から自動設定されるためオプショナル
     semester: Optional[str] = None
     course_code: Optional[str] = None
 

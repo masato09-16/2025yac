@@ -4,7 +4,7 @@ Class schedule API routes
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, time
 
 from database.session import get_db
 from database.models.schedule import ClassSchedule, DAY_SHORT_NAMES
@@ -14,6 +14,17 @@ from api.models.schedule import (
     ClassScheduleUpdate,
     ClassScheduleWithStatus,
 )
+
+# 時限時間マッピング（横浜国立大学の標準時限）
+PERIOD_TIMES = {
+    1: (time(8, 50), time(10, 20)),   # 1時限
+    2: (time(10, 30), time(12, 0)),   # 2時限
+    3: (time(13, 0), time(14, 30)),   # 3時限
+    4: (time(14, 40), time(16, 10)),  # 4時限
+    5: (time(16, 20), time(17, 50)),  # 5時限
+    6: (time(18, 0), time(19, 30)),   # 6時限
+    7: (time(19, 40), time(21, 10)),  # 7時限
+}
 
 router = APIRouter(prefix="/schedules", tags=["schedules"])
 
@@ -103,9 +114,20 @@ def create_schedule(
     # Generate ID
     schedule_id = f"sched-{uuid.uuid4().hex[:12]}"
     
+    schedule_data = schedule.model_dump()
+    
+    # 時限から自動的に開始・終了時間を設定
+    if not schedule_data.get('start_time') or not schedule_data.get('end_time'):
+        period = schedule_data.get('period')
+        if period in PERIOD_TIMES:
+            schedule_data['start_time'] = PERIOD_TIMES[period][0]
+            schedule_data['end_time'] = PERIOD_TIMES[period][1]
+        else:
+            raise HTTPException(status_code=400, detail=f"Invalid period: {period}")
+    
     db_schedule = ClassSchedule(
         id=schedule_id,
-        **schedule.model_dump()
+        **schedule_data
     )
     
     db.add(db_schedule)
@@ -148,4 +170,68 @@ def delete_schedule(schedule_id: str, db: Session = Depends(get_db)):
     db.commit()
     
     return {"message": "Schedule deleted successfully"}
+
+
+@router.post("/bulk-import", response_model=List[ClassScheduleResponse])
+def bulk_import_schedules(
+    schedules: List[ClassScheduleCreate],
+    db: Session = Depends(get_db),
+):
+    """Bulk import class schedules from JSON
+    
+    This endpoint allows importing multiple schedules at once.
+    If start_time and end_time are not provided, they will be automatically
+    set based on the period field.
+    """
+    import uuid
+    
+    results = []
+    
+    for schedule_data in schedules:
+        schedule_dict = schedule_data.model_dump()
+        
+        # 時限から自動的に開始・終了時間を設定
+        if not schedule_dict.get('start_time') or not schedule_dict.get('end_time'):
+            period = schedule_dict.get('period')
+            if period in PERIOD_TIMES:
+                schedule_dict['start_time'] = PERIOD_TIMES[period][0]
+                schedule_dict['end_time'] = PERIOD_TIMES[period][1]
+            else:
+                raise HTTPException(status_code=400, detail=f"Invalid period: {period} for schedule {schedule_dict.get('class_name', 'unknown')}")
+        
+        # IDが指定されていない場合は自動生成
+        if 'id' not in schedule_dict or not schedule_dict.get('id'):
+            schedule_dict['id'] = f"sched-{uuid.uuid4().hex[:12]}"
+        
+        schedule_id = schedule_dict['id']
+        
+        # 既存のスケジュールを確認
+        existing_schedule = db.query(ClassSchedule).filter(ClassSchedule.id == schedule_id).first()
+        
+        if existing_schedule:
+            # 更新
+            for field, value in schedule_dict.items():
+                if field != 'id':
+                    setattr(existing_schedule, field, value)
+            results.append(existing_schedule)
+        else:
+            # 新規作成
+            db_schedule = ClassSchedule(**schedule_dict)
+            db.add(db_schedule)
+            results.append(db_schedule)
+    
+    # データベースに存在するが、インポートリストにないスケジュールを削除
+    imported_ids = {s.model_dump().get('id') or f"sched-{uuid.uuid4().hex[:12]}" for s in schedules}
+    all_schedules = db.query(ClassSchedule).all()
+    for db_schedule in all_schedules:
+        if db_schedule.id not in imported_ids:
+            db.delete(db_schedule)
+    
+    db.commit()
+    
+    # 結果をリフレッシュ
+    for result in results:
+        db.refresh(result)
+    
+    return results
 

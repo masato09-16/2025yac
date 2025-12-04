@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Edit2, Calendar, Clock, BookOpen, Save, X, Building2, Users, Wifi, Plug, Projector, Search, Filter } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Calendar, Clock, X, Building2, Users, Wifi, Plug, Projector, Search, Filter, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,25 +59,15 @@ export default function Admin() {
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editingSchedule, setEditingSchedule] = useState<ClassSchedule | null>(null);
-  const [isAddingSchedule, setIsAddingSchedule] = useState(false);
   const [scheduleFilter, setScheduleFilter] = useState({ classroom_id: '', day_of_week: '' });
+  const [showBulkImport, setShowBulkImport] = useState(false);
+  const [bulkImportJson, setBulkImportJson] = useState('');
 
   // Classrooms state
   const [editingClassroom, setEditingClassroom] = useState<Classroom | null>(null);
   const [isAddingClassroom, setIsAddingClassroom] = useState(false);
   const [classroomFilter, setClassroomFilter] = useState({ faculty: 'all', building_id: 'all' });
 
-  // Form states
-  const [scheduleFormData, setScheduleFormData] = useState({
-    classroom_id: '',
-    class_name: '',
-    instructor: '',
-    day_of_week: '0',
-    period: '1',
-    semester: '前期',
-    course_code: '',
-  });
 
   const [classroomFormData, setClassroomFormData] = useState({
     id: '',
@@ -126,97 +116,56 @@ export default function Admin() {
   };
 
   // ============= Schedule Management =============
-  const handleScheduleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const period = parseInt(scheduleFormData.period);
-    const [start_time, end_time] = PERIOD_TIMES[period];
-
-    const scheduleData = {
-      classroom_id: scheduleFormData.classroom_id,
-      class_name: scheduleFormData.class_name,
-      instructor: scheduleFormData.instructor || undefined,
-      day_of_week: parseInt(scheduleFormData.day_of_week),
-      period,
-      start_time,
-      end_time,
-      semester: scheduleFormData.semester || undefined,
-      course_code: scheduleFormData.course_code || undefined,
-    };
-
+  const handleBulkImport = async () => {
     try {
-      if (editingSchedule) {
-        const response = await fetch(`${API_BASE_URL}/api/v1/schedules/${editingSchedule.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(scheduleData),
-        });
-
-        if (response.ok) {
-          await fetchData();
-          setEditingSchedule(null);
-          resetScheduleForm();
-        }
-      } else {
-        const response = await fetch(`${API_BASE_URL}/api/v1/schedules/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(scheduleData),
-        });
-
-        if (response.ok) {
-          await fetchData();
-          setIsAddingSchedule(false);
-          resetScheduleForm();
-        }
+      let schedulesData: any[];
+      
+      // JSON文字列をパース
+      try {
+        schedulesData = JSON.parse(bulkImportJson);
+      } catch (e) {
+        alert('JSONの形式が正しくありません。正しいJSON形式で入力してください。');
+        return;
       }
-    } catch (error) {
-      console.error('Failed to save schedule:', error);
-      alert('保存に失敗しました');
-    }
-  };
 
-  const handleScheduleDelete = async (id: string) => {
-    if (!confirm('この授業スケジュールを削除しますか？')) return;
+      // 配列であることを確認
+      if (!Array.isArray(schedulesData)) {
+        alert('JSONは配列形式である必要があります。例: [{...}, {...}]');
+        return;
+      }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/schedules/${id}`, {
-        method: 'DELETE',
+      // 一括インポートAPIを呼び出し
+      const response = await fetch(`${API_BASE_URL}/api/v1/schedules/bulk-import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(schedulesData),
       });
 
-      if (response.ok) {
-        await fetchData();
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'インポートに失敗しました');
       }
+
+      await fetchData();
+      setBulkImportJson('');
+      setShowBulkImport(false);
+      alert(`${schedulesData.length}件のスケジュールをインポートしました`);
     } catch (error) {
-      console.error('Failed to delete schedule:', error);
-      alert('削除に失敗しました');
+      console.error('Failed to import schedules:', error);
+      alert(error instanceof Error ? error.message : 'インポートに失敗しました');
     }
   };
 
-  const handleScheduleEdit = (schedule: ClassSchedule) => {
-    setEditingSchedule(schedule);
-    setScheduleFormData({
-      classroom_id: schedule.classroom_id,
-      class_name: schedule.class_name,
-      instructor: schedule.instructor || '',
-      day_of_week: schedule.day_of_week.toString(),
-      period: schedule.period.toString(),
-      semester: schedule.semester || '前期',
-      course_code: schedule.course_code || '',
-    });
-    setIsAddingSchedule(true);
-  };
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  const resetScheduleForm = () => {
-    setScheduleFormData({
-      classroom_id: '',
-      class_name: '',
-      instructor: '',
-      day_of_week: '0',
-      period: '1',
-      semester: '前期',
-      course_code: '',
-    });
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setBulkImportJson(content);
+    };
+    reader.readAsText(file);
   };
 
   // ============= Classroom Management =============
@@ -740,152 +689,57 @@ export default function Admin() {
 
           {/* ============= 授業管理タブ ============= */}
           <TabsContent value="schedules" className="space-y-6">
-            {/* 授業追加/編集フォーム */}
-            {isAddingSchedule && (
+            {/* JSON一括インポート */}
+            {showBulkImport && (
               <Card className="border-ynu-blue shadow-lg">
                 <CardHeader className="bg-gradient-to-r from-ynu-blue to-ynu-blue-dark text-white py-3">
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <BookOpen className="w-4 h-4" />
-                    {editingSchedule ? '授業スケジュール編集' : '新規授業スケジュール追加'}
+                    <Upload className="w-4 h-4" />
+                    JSONから一括インポート
                   </CardTitle>
                   <CardDescription className="text-blue-100 text-xs">
-                    授業情報を入力してください
+                    backend/data/schedules.json の形式でJSONを入力してください
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  <form onSubmit={handleScheduleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* 教室選択 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="classroom_id">教室 *</Label>
-                        <Select
-                          value={scheduleFormData.classroom_id}
-                          onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, classroom_id: value })}
-                          required
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="教室を選択" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {classrooms.map((classroom) => (
-                              <SelectItem key={classroom.id} value={classroom.id}>
-                                {classroom.room_number} ({FACULTY_NAMES[classroom.faculty as Faculty]?.short || classroom.faculty})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* 授業名 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="class_name">授業名 *</Label>
-                        <Input
-                          id="class_name"
-                          value={scheduleFormData.class_name}
-                          onChange={(e) => setScheduleFormData({ ...scheduleFormData, class_name: e.target.value })}
-                          placeholder="例: 線形代数学"
-                          required
-                        />
-                      </div>
-
-                      {/* 教員名 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="instructor">教員名</Label>
-                        <Input
-                          id="instructor"
-                          value={scheduleFormData.instructor}
-                          onChange={(e) => setScheduleFormData({ ...scheduleFormData, instructor: e.target.value })}
-                          placeholder="例: 田中 教授"
-                        />
-                      </div>
-
-                      {/* 曜日 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="day_of_week">曜日 *</Label>
-                        <Select
-                          value={scheduleFormData.day_of_week}
-                          onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, day_of_week: value })}
-                          required
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DAY_NAMES.map((day, index) => (
-                              <SelectItem key={index} value={index.toString()}>
-                                {day}曜日
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* 時限 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="period">時限 *</Label>
-                        <Select
-                          value={scheduleFormData.period}
-                          onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, period: value })}
-                          required
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(PERIOD_TIMES).map(([period, [start, end]]) => (
-                              <SelectItem key={period} value={period}>
-                                {period}時限 ({start.slice(0, 5)} - {end.slice(0, 5)})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* 学期 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="semester">学期</Label>
-                        <Select
-                          value={scheduleFormData.semester}
-                          onValueChange={(value) => setScheduleFormData({ ...scheduleFormData, semester: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="前期">前期</SelectItem>
-                            <SelectItem value="後期">後期</SelectItem>
-                            <SelectItem value="通年">通年</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* 授業コード */}
-                      <div className="space-y-2">
-                        <Label htmlFor="course_code">授業コード</Label>
-                        <Input
-                          id="course_code"
-                          value={scheduleFormData.course_code}
-                          onChange={(e) => setScheduleFormData({ ...scheduleFormData, course_code: e.target.value })}
-                          placeholder="例: CS101"
-                        />
-                      </div>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="json_file">JSONファイルを選択</Label>
+                      <Input
+                        id="json_file"
+                        type="file"
+                        accept=".json"
+                        onChange={handleFileUpload}
+                        className="mt-2"
+                      />
                     </div>
-
+                    <div>
+                      <Label htmlFor="json_text">またはJSONを直接貼り付け</Label>
+                      <textarea
+                        id="json_text"
+                        value={bulkImportJson}
+                        onChange={(e) => setBulkImportJson(e.target.value)}
+                        placeholder={`[\n  {\n    "id": "sched-edu6-101-mon-1",\n    "classroom_id": "edu6-101",\n    "class_name": "教育心理学",\n    "instructor": "田中 教授",\n    "day_of_week": 0,\n    "period": 1,\n    "semester": "前期",\n    "course_code": null\n  }\n]`}
+                        className="w-full h-64 p-3 border rounded-md font-mono text-sm mt-2"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        ※ start_timeとend_timeは時限（period）から自動的に設定されます
+                      </p>
+                    </div>
                     <div className="flex gap-3 justify-end pt-4">
                       <Button type="button" variant="outline" onClick={() => {
-                        setIsAddingSchedule(false);
-                        setEditingSchedule(null);
-                        resetScheduleForm();
+                        setShowBulkImport(false);
+                        setBulkImportJson('');
                       }}>
                         <X className="w-4 h-4 mr-2" />
                         キャンセル
                       </Button>
-                      <Button type="submit" className="bg-ynu-blue hover:bg-ynu-blue-dark">
-                        <Save className="w-4 h-4 mr-2" />
-                        {editingSchedule ? '更新' : '追加'}
+                      <Button type="button" onClick={handleBulkImport} className="bg-ynu-blue hover:bg-ynu-blue-dark">
+                        <Upload className="w-4 h-4 mr-2" />
+                        インポート
                       </Button>
                     </div>
-                  </form>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -902,12 +756,10 @@ export default function Admin() {
                     <CardDescription className="text-xs">登録済みの授業スケジュール ({filteredSchedules.length}件)</CardDescription>
                   </div>
                   <Button onClick={() => {
-                    setIsAddingSchedule(true);
-                    setEditingSchedule(null);
-                    resetScheduleForm();
+                    setShowBulkImport(true);
                   }} className="bg-ynu-blue hover:bg-ynu-blue-dark">
-                    <Plus className="w-4 h-4 mr-2" />
-                    新規追加
+                    <Upload className="w-4 h-4 mr-2" />
+                    JSONから一括インポート
                   </Button>
                 </div>
 
@@ -1009,23 +861,6 @@ export default function Admin() {
                                       </span>
                                       {schedule.course_code && <span>📝 {schedule.course_code}</span>}
                                     </div>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleScheduleEdit(schedule)}
-                                    >
-                                      <Edit2 className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleScheduleDelete(schedule.id)}
-                                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </Button>
                                   </div>
                                 </div>
                               ))}

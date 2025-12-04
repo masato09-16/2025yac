@@ -27,8 +27,24 @@ def _load_schedules() -> List[Dict]:
         with open(JSON_FILE, 'r', encoding='utf-8') as f:
             schedules = json.load(f)
             
-            # 時刻文字列をtimeオブジェクトに変換
+            # 時刻文字列をtimeオブジェクトに変換、または時限から自動設定
             for schedule in schedules:
+                period = schedule.get('period')
+                
+                # start_timeとend_timeが存在しない場合、時限から自動設定
+                if 'start_time' not in schedule or not schedule.get('start_time'):
+                    if period in PERIOD_TIMES:
+                        schedule['start_time'] = PERIOD_TIMES[period][0]
+                    else:
+                        raise ValueError(f"Invalid period: {period}")
+                
+                if 'end_time' not in schedule or not schedule.get('end_time'):
+                    if period in PERIOD_TIMES:
+                        schedule['end_time'] = PERIOD_TIMES[period][1]
+                    else:
+                        raise ValueError(f"Invalid period: {period}")
+                
+                # 時刻文字列をtimeオブジェクトに変換
                 if isinstance(schedule.get('start_time'), str):
                     start_parts = schedule['start_time'].split(':')
                     schedule['start_time'] = time(int(start_parts[0]), int(start_parts[1]), int(start_parts[2]) if len(start_parts) > 2 else 0)

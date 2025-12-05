@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Edit2, Calendar, Clock, X, Building2, Users, Wifi, Plug, Projector, Search, Filter, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Edit2, Calendar, Clock, X, Building2, Users, Wifi, Plug, Projector, Search, Filter, Upload, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -119,7 +119,7 @@ export default function Admin() {
   const handleBulkImport = async () => {
     try {
       let schedulesData: any[];
-      
+
       // JSON文字列をパース
       try {
         schedulesData = JSON.parse(bulkImportJson);

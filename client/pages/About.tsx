@@ -190,7 +190,7 @@ export default function About() {
               <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
                 <div className="w-3 h-3 bg-green-500 rounded-full mt-1 flex-shrink-0"></div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-sm text-green-900 mb-1">🟢 利用可能（空き）</h3>
+                  <h3 className="font-semibold text-sm text-green-900 mb-1">利用可能（空き）</h3>
                   <p className="text-xs text-green-700">
                     現在授業がなく、利用可能な教室です。すぐに使用できます。
                   </p>
@@ -200,7 +200,7 @@ export default function About() {
               <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
                 <div className="w-3 h-3 bg-red-500 rounded-full mt-1 flex-shrink-0"></div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-sm text-red-900 mb-1">🔴 使用中</h3>
+                  <h3 className="font-semibold text-sm text-red-900 mb-1">使用中</h3>
                   <p className="text-xs text-red-700">
                     現在授業が行われているか、多くの人が使用している教室です。
                     授業名や教員名が表示されます。
@@ -211,7 +211,7 @@ export default function About() {
               <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="w-3 h-3 bg-gray-400 rounded-full mt-1 flex-shrink-0"></div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-sm text-gray-900 mb-1">⚫ データなし</h3>
+                  <h3 className="font-semibold text-sm text-gray-900 mb-1">データなし</h3>
                   <p className="text-xs text-gray-700">
                     現在の利用状況データが取得できていない教室です。
                     実際には空いている可能性もありますが、確認が必要です。

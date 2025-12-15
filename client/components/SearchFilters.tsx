@@ -110,7 +110,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
                 }
               `}
             >
-              📍 現在の空き状況
+              現在の空き状況
             </button>
             <button
               onClick={() => setFilters({ ...filters, searchMode: 'future', targetDate: getDateAfterDays(0) })}
@@ -192,11 +192,11 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
                   "
                 >
                   <option value="all">すべて</option>
-                  <option value="available">🟢 空きのみ</option>
-                  <option value="in-use">🔴 使用中のみ</option>
-                  <option value="no-data">⚫ データなし</option>
+                  <option value="available">空きのみ</option>
+                  <option value="in-use">使用中のみ</option>
+                  <option value="no-data">データなし</option>
                   {isAuthenticated && (
-                    <option value="favorites">⭐ お気に入りのみ</option>
+                    <option value="favorites">お気に入りのみ</option>
                   )}
                 </select>
                 <ChevronDown className="

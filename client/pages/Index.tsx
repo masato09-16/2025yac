@@ -312,7 +312,7 @@ export default function Index() {
                 <p className="text-xs text-gray-600">
                   {currentFilters.searchMode === 'future' && currentFilters.targetDate && (
                     <span className="text-ynu-blue font-semibold mr-1.5">
-                      📅 {currentFilters.targetDate} {PERIODS.find(p => p.id === currentFilters.period)?.name}
+                      {currentFilters.targetDate} {PERIODS.find(p => p.id === currentFilters.period)?.name}
                     </span>
                   )}
                   全 {displayedClassrooms.length} 件

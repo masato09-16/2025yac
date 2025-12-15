@@ -125,7 +125,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
                 }
               `}
             >
-              🔮 日時を指定
+              日時を指定
             </button>
             
             {/* モバイル: 折りたたみボタン */}

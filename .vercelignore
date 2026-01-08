@@ -1,0 +1,10 @@
+dist
+.git
+.gitignore
+node_modules
+.env
+.env.*
+backend
+camera-deployment-package
+__pycache__
+*.pyc

@@ -22,7 +22,7 @@ except ImportError:
 from ..database.session import get_db
 from ..database.models.occupancy import Occupancy as DBOccupancy, OccupancyHistory
 from ..database.models.classroom import Classroom
-from config import settings
+from ..config import settings
 
 logger = logging.getLogger(__name__)
 

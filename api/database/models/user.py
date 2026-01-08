@@ -3,7 +3,7 @@ User and authentication models
 """
 from sqlalchemy import Column, String, Integer, DateTime, func, Boolean, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
-from database.session import Base
+from ..session import Base
 
 
 class User(Base):

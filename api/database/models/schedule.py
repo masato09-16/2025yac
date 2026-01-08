@@ -3,7 +3,7 @@ Class schedule database model
 """
 from sqlalchemy import Column, String, Integer, DateTime, func, ForeignKey, Time
 from sqlalchemy.orm import relationship
-from database.session import Base
+from ..session import Base
 from datetime import datetime, time
 from typing import Optional
 

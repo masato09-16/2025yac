@@ -3,7 +3,7 @@ Occupancy database models
 """
 from sqlalchemy import Column, String, Integer, DateTime, func, Float, ForeignKey
 from sqlalchemy.orm import relationship
-from database.session import Base
+from ..session import Base
 
 
 class Occupancy(Base):

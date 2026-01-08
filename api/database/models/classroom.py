@@ -3,7 +3,7 @@ Classroom database model
 """
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
-from database.session import Base
+from ..session import Base
 
 
 class Classroom(Base):

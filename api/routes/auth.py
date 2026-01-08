@@ -13,7 +13,7 @@ from jose import jwt, JWTError
 
 from ..database.session import get_db
 from ..database.models.user import User
-from config import settings
+from ..config import settings
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 

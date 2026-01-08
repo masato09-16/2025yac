@@ -66,12 +66,13 @@ async def get_classrooms_with_status(
     
     OPTIMIZED: Uses eager loading to prevent N+1 queries
     """
-    from sqlalchemy.orm import joinedload
+    from sqlalchemy.orm import selectinload
     
     # Eager load occupancy and schedules to prevent N+1 queries
+    # Use selectinload which is often more efficient for 1-to-many collections
     query = db.query(Classroom).options(
-        joinedload(Classroom.occupancy),
-        joinedload(Classroom.schedules)
+        selectinload(Classroom.occupancy),
+        selectinload(Classroom.schedules)
     )
     
     if faculty:

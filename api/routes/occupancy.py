@@ -254,11 +254,16 @@ async def update_occupancy(
         )
         db.add(occupancy)
     
-    # Create history entry
+    # Explicitly set the timestamp to avoid collision and ensure consistency
+    from datetime import timezone
+    now = datetime.now(timezone.utc)
+    occupancy.last_updated = now
+    
+    # Create history entry with unique ID based on current timestamp
     history = OccupancyHistory(
-        id=f"hist_{occupancy.classroom_id}_{occupancy.last_updated}",
+        id=f"hist_{occupancy.classroom_id}_{now.timestamp()}",
         classroom_id=occupancy.classroom_id,
-        timestamp=occupancy.last_updated,
+        timestamp=now,
         count=occupancy.current_count,
         detection_confidence=occupancy.detection_confidence,
         camera_id=occupancy.camera_id,

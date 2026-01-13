@@ -156,12 +156,11 @@ export default function Index() {
       return;
     }
 
-    // 人数だけを更新する関数
-    const updateOccupancyOnly = async () => {
+    // 教室のステータス全体を更新する関数
+    const updateClassroomStatus = async () => {
       try {
-        console.log('Polling occupancy data...'); // デバッグ用ログ
+        // console.log('Polling classroom status...');
 
-        // フィルター条件に応じたパラメータを構築
         const params: any = {};
         if (currentFilters.faculty !== 'all') {
           params.faculty = currentFilters.faculty;
@@ -170,32 +169,60 @@ export default function Index() {
           params.building_id = currentFilters.building;
         }
 
-        // 人数情報だけを取得（軽量なAPI）
-        const occupancyData = await getAllOccupancy(params);
-        console.log('Received occupancy data:', occupancyData.length, 'records'); // デバッグ用ログ
+        // Full fetch to get status updates (offline/online, schedule changes)
+        const data = await getClassroomsWithStatus(params);
 
-        // 現在の教室データを更新（人数だけ）
+        // Update local state
         setClassrooms(prevClassrooms => {
-          return prevClassrooms.map(classroom => {
-            const occupancy = occupancyData.find(occ => occ.classroom_id === classroom.id);
-            if (occupancy) {
-              // 値が変わった場合のみ更新（Reactの再レンダリング最適化）
-              if (classroom.currentOccupancy !== occupancy.current_count ||
-                classroom.lastUpdated !== occupancy.last_updated) {
-                console.log(`Updating classroom ${classroom.id}: ${classroom.currentOccupancy} -> ${occupancy.current_count}`);
+          return prevClassrooms.map(prevClassroom => {
+            const newData = data.find(item => item.classroom.id === prevClassroom.id);
+
+            if (newData) {
+              // Map backend status to frontend status (Same logic as initial fetch)
+              let newStatus: 'available' | 'in-use' | 'occupied' | 'full' | 'no-data' = 'available';
+              const backendStatus = newData.status;
+
+              if (backendStatus === 'no-data') {
+                newStatus = 'no-data';
+              } else if (backendStatus === 'in-class' || backendStatus === 'scheduled-low') {
+                newStatus = 'in-use';
+              } else if (backendStatus === 'occupied') {
+                newStatus = 'full';
+              } else if (backendStatus === 'partially-occupied') {
+                newStatus = 'occupied';
+              } else {
+                newStatus = 'available';
+              }
+
+              const newOccupancyCount = newData.occupancy?.current_count || 0;
+              const newLastUpdated = newData.occupancy?.last_updated || prevClassroom.lastUpdated;
+
+              // Check for changes (Occupancy, Status, or Active Class)
+              const hasChanged =
+                prevClassroom.currentOccupancy !== newOccupancyCount ||
+                prevClassroom.status !== newStatus ||
+                prevClassroom.statusDetail !== newData.status_detail ||
+                // Simple check for active class change (by name)
+                prevClassroom.activeClass?.class_name !== newData.active_class?.class_name;
+
+              if (hasChanged) {
+                console.log(`Updated ${prevClassroom.roomNumber}: ${prevClassroom.status} -> ${newStatus}, ${prevClassroom.currentOccupancy} -> ${newOccupancyCount}`);
                 return {
-                  ...classroom,
-                  currentOccupancy: occupancy.current_count,
-                  lastUpdated: occupancy.last_updated,
+                  ...prevClassroom,
+                  currentOccupancy: newOccupancyCount,
+                  status: newStatus,
+                  statusDetail: newData.status_detail,
+                  activeClass: newData.active_class,
+                  lastUpdated: newLastUpdated,
+                  imageUrl: newData.image_url,
                 };
               }
             }
-            return classroom;
+            return prevClassroom;
           });
         });
       } catch (err) {
-        // 人数更新が失敗しても、エラーを表示しない（静かに失敗）
-        console.error('Failed to update occupancy:', err);
+        console.error('Failed to update classroom status:', err);
       }
     };
 
@@ -206,7 +233,7 @@ export default function Index() {
       10
     );
 
-    const intervalId = setInterval(updateOccupancyOnly, pollingInterval);
+    const intervalId = setInterval(updateClassroomStatus, pollingInterval);
 
     // クリーンアップ
     return () => {

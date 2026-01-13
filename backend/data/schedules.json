@@ -1,12 +1,122 @@
 [
   {
-    "id": "sched-edu6-101-mon-1",
-    "classroom_id": "edu6-101",
-    "class_name": "教育心理学",
-    "instructor": "田中 教授",
-    "day_of_week": 0,
-    "period": 1,
+    "id": "sched-bus1-105-tue-3",
+    "classroom_id": "bus1-105",
+    "class_name": "企業環境マネジメント論",
+    "instructor": "孫 穎",
+    "day_of_week": 2,
+    "period": 3,
     "semester": "前期",
-    "course_code": null
+    "course_code": 3001208
+  },
+  {
+    "id": "sched-bus1-105-tue-4",
+    "classroom_id": "bus1-105",
+    "class_name": "軽量経済学",
+    "instructor": "金澤 匡剛",
+    "day_of_week": 2,
+    "period": 4,
+    "semester": "前期",
+    "course_code": 2225104
+  },
+  {
+    "id": "sched-bus1-105-wed-3",
+    "classroom_id": "bus1-105",
+    "class_name": "経営英語演習A",
+    "instructor": "佐藤 利晴",
+    "day_of_week": 3,
+    "period": 3,
+    "semester": "前期",
+    "course_code": 3001801
+  },
+  {
+    "id": "sched-bus1-105-wed-4",
+    "classroom_id": "bus1-105",
+    "class_name": "経営英語演習A",
+    "instructor": "佐藤 利晴",
+    "day_of_week": 3,
+    "period": 4,
+    "semester": "前期",
+    "course_code": 3001803
+  },
+  {
+    "id": "sched-bus1-105-mon-1",
+    "classroom_id": "bus1-105",
+    "class_name": "裁判法",
+    "instructor": "金子 章",
+    "day_of_week": 1,
+    "period": 1,
+    "semester": "後期",
+    "course_code": 3001610
+  },
+  {
+    "id": "sched-bus1-105-tue-4",
+    "classroom_id": "bus1-105",
+    "class_name": "中級計量経済学",
+    "instructor": "金澤 匡剛",
+    "day_of_week": 2,
+    "period": 4,
+    "semester": "後期",
+    "course_code": 2345107
+  },
+  {
+    "id": "sched-bus1-105-wed-3",
+    "classroom_id": "bus1-105",
+    "class_name": "経営英語演習B",
+    "instructor": "佐藤 利晴",
+    "day_of_week": 3,
+    "period": 3,
+    "semester": "後期",
+    "course_code": 3001805
+  },
+  {
+    "id": "sched-bus1-105-wed-4",
+    "classroom_id": "bus1-105",
+    "class_name": "経営英語演習B",
+    "instructor": "佐藤 利晴",
+    "day_of_week": 3,
+    "period": 4,
+    "semester": "後期",
+    "course_code": 3001807
+  },
+  {
+    "id": "sched-bus1-105-thu-3",
+    "classroom_id": "bus1-105",
+    "class_name": "Basics of Business Accounting",
+    "instructor": "ブライソン・スチュアート",
+    "day_of_week": 4,
+    "period": 3,
+    "semester": "後期",
+    "course_code": 3001713
+  },
+  {
+    "id": "sched-bus1-105-thu-4",
+    "classroom_id": "bus1-105",
+    "class_name": "English for Business",
+    "instructor": "ブライソン・スチュアート",
+    "day_of_week": 4,
+    "period": 4,
+    "semester": "後期",
+    "course_code": 3001511
+  },
+  {
+    "id": "sched-bus1-105-Fri-3",
+    "classroom_id": "bus1-105",
+    "class_name": "組織間関係論",
+    "instructor": "横田 一貴",
+    "day_of_week": 5,
+    "period": 3,
+    "semester": "後期",
+    "course_code": 3001201
+  },
+  {
+    "id": "sched-bus1-105-Fri-4",
+    "classroom_id": "bus1-105",
+    "class_name": "グローバルキャリアデザイン",
+    "instructor": "石田 満恵",
+    "day_of_week": 5,
+    "period": 4,
+    "semester": "後期",
+    "course_code": 3001724
   }
 ]
